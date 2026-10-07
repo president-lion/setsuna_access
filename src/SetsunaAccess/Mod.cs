@@ -23,6 +23,10 @@ namespace SetsunaAccess
         {
             try { Hotkeys(); }
             catch (Exception ex) { Log.Once("Hotkeys", ex); }
+            try { Results.Tick(); }
+            catch (Exception ex) { Log.Once("Results", ex); }
+            try { NameEntry.Tick(); }
+            catch (Exception ex) { Log.Once("NameEntry", ex); }
             try { Field.Tick(); }
             catch (Exception ex) { Log.Once("Field", ex); }
         }
@@ -35,19 +39,20 @@ namespace SetsunaAccess
             catch (Exception ex) { Log.Once("Battle", ex); }
         }
 
-        // F-keys only: the game binds letters, digits, Space, Return, Delete and Left Ctrl.
+        // The game binds letters, digits, Space, Return, Delete and Left Ctrl (Left Ctrl only matters
+        // on the Key Config help screen). Z is free by default.
         private static void Hotkeys()
         {
-            var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            var ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
             if (Input.GetKeyDown(KeyCode.F1)) Speech.Say(Strings.Help);
-            if (Input.GetKeyDown(KeyCode.F2)) Field.SayLocation();
             if (Input.GetKeyDown(KeyCode.F3)) Speech.Repeat();
-            if (Input.GetKeyDown(KeyCode.F4)) Field.NextCategory(shift ? -1 : 1);
-            if (Input.GetKeyDown(KeyCode.F5)) Field.Cycle(-1);
-            if (Input.GetKeyDown(KeyCode.F6)) Field.Cycle(1);
-            if (Input.GetKeyDown(KeyCode.F7)) Field.RepeatSelected();
-            if (Input.GetKeyDown(KeyCode.F8)) Field.ToggleBeacon();
             if (Input.GetKeyDown(KeyCode.F9)) Field.SayParty();
+            // Z is a letter: not while a name is being typed.
+            if (Input.GetKeyDown(KeyCode.Z) && !NameEntry.Open && !Setsuna.GuiManager.IsInputName) Field.SayLocation();
+            if (Input.GetKeyDown(KeyCode.PageUp)) { if (ctrl) Field.NextCategory(-1); else Field.Cycle(-1); }
+            if (Input.GetKeyDown(KeyCode.PageDown)) { if (ctrl) Field.NextCategory(1); else Field.Cycle(1); }
+            if (Input.GetKeyDown(KeyCode.Home)) { if (ctrl) Field.WalkToSelected(); else Field.RepeatSelected(); }
+            if (Input.GetKeyDown(KeyCode.End)) Field.ToggleBeacon();
             if (Input.GetKeyDown(KeyCode.F11))
             {
                 Log.Info("UiDump", UiDump.Write());

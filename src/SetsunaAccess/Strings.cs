@@ -11,6 +11,7 @@ namespace SetsunaAccess
         public const string NoSaveData = "No save data.";
 
         public const string KnockedOut = "knocked out";
+        public const string GameOver = "Game over.";
 
         // Field scanner.
         public const string CatAll = "Everything", CatPeople = "People", CatChests = "Chests", CatExits = "Exits",
@@ -21,8 +22,17 @@ namespace SetsunaAccess
         public const string BeaconOn = "Beacon on.", BeaconOff = "Beacon off.";
         public const string UnknownPlace = "Unknown place.";
         public const string Help =
-            "F1 help. F2 location. F3 repeat. F4 scanner category, shift F4 back. F5 and F6 previous and next object. " +
-            "F7 where is the selected object. F8 beacon tone toward it. F9 party status. F11 screen text dump.";
+            "F1 help. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
+            "Control page up and page down, scanner category. Home, where is the selected object. " +
+            "Control home, walk to it; any movement key stops. End, beacon tone toward it. F9 party status. F11 screen text dump.";
+        public static string DefaultName(string name) { return "Default: " + name; }
+        public static string Deleted(string text) { return "deleted " + text; }
+        public static string NameChosen(string name) { return name + "."; }
+        public const string WalkCancelled = "Stopped.";
+        public const string WalkLost = "Target gone.";
+        public static string WalkingTo(string name) { return "Walking to " + name; }
+        public static string Arrived(string name) { return "Arrived at " + name; }
+        public static string Blocked(string name) { return "Blocked, can't reach " + name; }
 
         private static readonly string[] Directions = { "up", "up right", "right", "down right", "down", "down left", "left", "up left" };
         public static string Direction(int octant) { return Directions[octant & 7]; }

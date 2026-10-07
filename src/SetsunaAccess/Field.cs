@@ -29,6 +29,7 @@ namespace SetsunaAccess
         private static int _index = -1;
         private static Transform _selected;
         private static string _selectedName;
+        private static Kind _selectedKind;
         private static string _lastTelop;
         private static bool _beacon;
         private static float _nextBeep;
@@ -45,6 +46,7 @@ namespace SetsunaAccess
 
         public static void OnFloorReady(FloorDataInfo floor)
         {
+            AutoWalk.Stop(null);
             _selected = null;
             _index = -1;
             var name = floor == null ? "" : TextClean.Clean(floor.mapName);
@@ -97,6 +99,7 @@ namespace SetsunaAccess
             var t0 = list[_index];
             _selected = t0.Transform;
             _selectedName = t0.Name;
+            _selectedKind = t0.Kind;
             Speech.Say(Strings.Item(Describe(t0.Name, t0.Transform), _index, list.Count));
         }
 
@@ -105,6 +108,24 @@ namespace SetsunaAccess
             if (!InField()) return;
             if (_selected == null || !_selected.gameObject.activeInHierarchy) { Speech.Say(Strings.NothingSelected); return; }
             Speech.Say(Describe(_selectedName, _selected));
+        }
+
+        public static void WalkToSelected()
+        {
+            if (!InField()) return;
+            if (AutoWalk.Active) { AutoWalk.Stop(Strings.WalkCancelled); return; }
+            if (_selected == null || !_selected.gameObject.activeInHierarchy) { Speech.Say(Strings.NothingSelected); return; }
+            // Stop where the game lets you interact; walk right into exits.
+            float arrive;
+            switch (_selectedKind)
+            {
+                case Kind.Person: arrive = 1.6f; break;
+                case Kind.Chest: arrive = 1.3f; break;
+                case Kind.SavePoint: arrive = 1.0f; break;
+                case Kind.Sparkle: arrive = 0.7f; break;
+                default: arrive = 0.2f; break;
+            }
+            AutoWalk.Start(_selected, _selectedName, arrive);
         }
 
         public static void ToggleBeacon()
@@ -117,7 +138,8 @@ namespace SetsunaAccess
         {
             if (!_beacon || _selected == null || Time.unscaledTime < _nextBeep) return;
             if (!InField() || !_selected.gameObject.activeInHierarchy) return;
-            if (GameManager.NowGameState != GAME_STATE.FIELD) return;
+            var gs = GameManager.NowGameState;
+            if (gs != GAME_STATE.FIELD && gs != GAME_STATE.WORLD) return;
 
             var player = Player();
             if (player == null) return;
@@ -158,14 +180,10 @@ namespace SetsunaAccess
         {
             var d = to - from;
             d.y = 0f;
-            var cam = Camera.main;
-            if (cam != null)
-            {
-                var right = cam.transform.right; right.y = 0f; right.Normalize();
-                var fwd = cam.transform.forward; fwd.y = 0f; fwd.Normalize();
-                screen = new Vector2(Vector3.Dot(d, right), Vector3.Dot(d, fwd));
-            }
-            else screen = new Vector2(d.x, d.z);
+            // Same basis the game moves the player in (BaseObject.CreateMoveVec).
+            var right = MainCameraControl.cameraTransform.right; right.y = 0f; right.Normalize();
+            var fwd = Vector3.Cross(right, Vector3.up).normalized;
+            screen = new Vector2(Vector3.Dot(d, right), Vector3.Dot(d, fwd));
             return d.magnitude;
         }
 

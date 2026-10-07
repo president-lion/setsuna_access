@@ -52,6 +52,19 @@ namespace SetsunaAccess
             Hook(h, typeof(UiShopConfirmation), "Open", new[] { typeof(int), typeof(int) }, postfix: nameof(ShopConfirm_Open));
             Hook(h, typeof(UiShopConfirmation), "Update_Number", postfix: nameof(ShopConfirm_Number));
 
+            // Battle results.
+            Hook(h, typeof(UiResultWindow), "Open", prefix: nameof(Result_Open));
+
+            // Tutorials and map pictures.
+            Hook(h, typeof(GuiManager), "ShowMap", prefix: nameof(Tutorial_Prefix));
+
+            // Naming screens.
+            Hook(h, typeof(UiNameBox), "Open", postfix: nameof(Name_Open));
+            Hook(h, typeof(UiNameBox), "ButtonUpdate", postfix: nameof(Name_Button));
+
+            // Walk-to-object steering.
+            Hook(h, typeof(InputManager), "Update", postfix: nameof(Input_After));
+
             // Field: place banners and arrival.
             Hook(h, typeof(GuiManager), "OpenTelop", prefix: nameof(Telop_Prefix));
             Hook(h, typeof(GuiManager), "OpenTelopWorld", prefix: nameof(Telop_Prefix));
@@ -265,6 +278,35 @@ namespace SetsunaAccess
         }
 
         // ---- field ----------------------------------------------------------------------
+
+        private static void Result_Open(UiResultWindow __instance) { Guard("Result", () => Results.OnOpen(__instance)); }
+
+        private static void Tutorial_Prefix(string _titleId, string _messageId)
+        {
+            Guard("Tutorial", () =>
+            {
+                Speech.Say(GameText(_titleId));
+                Speech.Say(GameText(_messageId), false);
+            });
+        }
+
+        /// <summary>A UI message by id with the game's tags (buttons, names) converted as it shows them.</summary>
+        private static string GameText(string id)
+        {
+            string s;
+            if (string.IsNullOrEmpty(id) || !ParameterManager.GetUIMessageData(id, out s) || s == null) return "";
+            var tags = new System.Collections.Generic.List<UiTagData>();
+            if (UiCommon.CheckTag(s, ref tags)) s = UiCommon.ConversionTag(s, ref tags);
+            return TextClean.Clean(s);
+        }
+
+        private static void Name_Open(UiNameBox __instance) { Guard("Name.Open", () => NameEntry.OnOpen(__instance)); }
+        private static void Name_Button(UiNameBox __instance) { Guard("Name.Button", () => NameEntry.OnButton(__instance)); }
+
+        private static void Input_After(InputManager __instance)
+        {
+            if (AutoWalk.Active) Guard("AutoWalk", () => AutoWalk.AfterInput(__instance));
+        }
 
         private static void Telop_Prefix(string str) { Guard("Telop", () => Field.OnTelop(str)); }
 
