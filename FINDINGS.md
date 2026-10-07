@@ -98,3 +98,11 @@ shops by calling C#. Hooking the C# side catches everything without touching Lua
 **Singletons create themselves on access** (`SingletonMonoBehaviour.Instance` adds a new GameObject when
 none exists). Never poll `SceneManager`, `BattleManager`, `FieldPartyManager` from the mod outside the
 state where they already exist; the field code checks the level name contains "_" first.
+
+## Notes from play (2026-10-07)
+
+- Escape = `GameManager` -> `GuiManager.OpenQuitWindow` -> `UiSystemSelectOnFrontWindow` ("quit game?"),
+  same layout as `UiSystemSelectBallon`. The main menu is "Triangle" (keyboard J by default) in
+  `UiCampManager.Update`. Momentum is "Square" (H) in `UiBattleWindow.Update`.
+- The game parks NPCs it doesn't need yet far off-map (a "Mysterious Man" at 14 km in the first forest).
+  The scanner ignores anything beyond 1 km. `BaseCharacter.IsVisible` is camera-frustum culling, not "hidden".

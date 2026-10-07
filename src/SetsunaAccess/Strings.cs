@@ -28,6 +28,13 @@ namespace SetsunaAccess
         public static string DefaultName(string name) { return "Default: " + name; }
         public static string Deleted(string text) { return "deleted " + text; }
         public static string NameChosen(string name) { return name + "."; }
+        public static string GameKeys(string confirm, string cancel, string menu, string momentum,
+                                      string up, string left, string down, string right)
+        {
+            return "Game keys: confirm Enter or " + confirm + ", cancel " + cancel + ", main menu " + menu +
+                   ", Momentum " + momentum + ", move " + up + " " + left + " " + down + " " + right +
+                   ". Escape asks to quit the game.";
+        }
         public const string WalkCancelled = "Stopped.";
         public const string WalkLost = "Target gone.";
         public static string WalkingTo(string name) { return "Walking to " + name; }

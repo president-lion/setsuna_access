@@ -24,6 +24,10 @@ namespace SetsunaAccess
             Hook(h, typeof(UiSystemSelectBallon), "Open", prefix: nameof(SysSelect_Open));
             Hook(h, typeof(UiSystemSelectBallon), "UpdateButton", postfix: nameof(SysSelect_Button));
 
+            // Same widget again, drawn in front of everything: the Escape "quit game?" prompt and others.
+            Hook(h, typeof(UiSystemSelectOnFrontWindow), "Open", prefix: nameof(SysSelect_Open));
+            Hook(h, typeof(UiSystemSelectOnFrontWindow), "UpdateButton", postfix: nameof(SysSelect_Button));
+
             Hook(h, typeof(UiCommonBalloon), "OpenQuestion", prefix: nameof(Question_Prefix));
             Hook(h, typeof(GuiManager), "ShowFeedMessage", prefix: nameof(Feed_Prefix));
 
@@ -161,7 +165,7 @@ namespace SetsunaAccess
             });
         }
 
-        private static void SysSelect_Button(UiSystemSelectBallon __instance)
+        private static void SysSelect_Button(UiBaseMonoBehaviour __instance)
         {
             Guard("SysSelect.Button", () =>
             {

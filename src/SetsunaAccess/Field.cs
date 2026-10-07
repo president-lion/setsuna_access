@@ -25,6 +25,8 @@ namespace SetsunaAccess
         private static readonly string[] Categories =
             { Strings.CatAll, Strings.CatPeople, Strings.CatChests, Strings.CatExits, Strings.CatSavePoints, Strings.CatSparkles };
 
+        private const float MaxRange = 1000f;
+
         private static int _category;
         private static int _index = -1;
         private static Transform _selected;
@@ -236,6 +238,8 @@ namespace SetsunaAccess
             if (t == null || !t.gameObject.activeInHierarchy) return;
             var d = t.position - player.position;
             d.y = 0f;
+            // The game parks characters it doesn't need yet far outside the map (seen: 14 km).
+            if (d.magnitude > MaxRange) return;
             list.Add(new Target { Kind = kind, Transform = t, Name = name, Distance = d.magnitude });
         }
     }
