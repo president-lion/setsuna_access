@@ -58,3 +58,15 @@ shops by calling C#. Hooking the C# side catches everything without touching Lua
 - Generic menu items: `UiChoices.OnSelect(bool, bool)` — every selectable widget goes through it.
 - Battle: `BattleManager`, `UiBattlePlayerCommand`, `UiBattleSetsunaSysAnnounce.Show(name)`, `UiBattleScrollList`.
 - Camp menu `UiCamp*`, shops `UiShop*`, saves `UiSaveLoadWindow`, feed messages `GuiManager.ShowFeedMessage`.
+
+## Screens and input (from code)
+
+- Boot order: `BootManager` opens the **Settings** window (`UiConfigWindow`) first, before the logo and
+  title. The level stays `Boot` until the player leaves it with Exit Settings.
+- Settings rows (`ITEM`): Language, Screen Mode, Resolution, Control Type, Exit Settings. Up/down picks
+  a row, left/right changes it, Confirm on Control Type opens Key Config (`UiConfigHelpWindow`, not yet read).
+- Keyboard defaults (`InputManager.ResetKeyBoardSetting`): Confirm = Return or Space, Cancel = K,
+  move = W/A/S/D (arrow keys also feed Unity's Horizontal/Vertical axes), menu = I, Momentum = Left Ctrl.
+- Title (`UiTitleMain`): Up *increments* the index; 0 = New Game, 1 = Load Game; left/right on Load flips
+  to Delete (`buttonIndex02`). The first key on "Press Any Button" also counts as a move.
+- Mod keys: F3 repeat, F11 UI dump. **F12 belongs to the user's NVDA** (speech history).

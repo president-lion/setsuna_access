@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- The pure-logic files are compiled in directly: they have no Unity or MelonLoader types. -->
+  <ItemGroup>
+    <Compile Include="..\..\src\SetsunaAccess\TextClean.cs" Link="Linked\TextClean.cs" />
+    <Compile Include="..\..\src\SetsunaAccess\RepeatFilter.cs" Link="Linked\RepeatFilter.cs" />
+    <Compile Include="..\..\src\SetsunaAccess\Strings.cs" Link="Linked\Strings.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
+    <PackageReference Include="xunit" Version="2.*" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.*" />
+  </ItemGroup>
+
+</Project>
