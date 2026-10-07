@@ -72,3 +72,21 @@ shops by calling C#. Hooking the C# side catches everything without touching Lua
 - Title (`UiTitleMain`): Up *increments* the index; 0 = New Game, 1 = Load Game; left/right on Load flips
   to Delete (`buttonIndex02`). The first key on "Press Any Button" also counts as a move.
 - Mod keys: F3 repeat, F11 UI dump. **F12 belongs to the user's NVDA** (speech history).
+
+## What the mod hooks (current)
+
+| Area | Hook | Notes |
+| --- | --- | --- |
+| Dialogue / system text | `DisplayOneByOneText.DisplayOneByOneCoroutine` | Speaker from the balloon's `txtName`; non-balloon text queues |
+| Answers, Yes/No | `UiSelectBalloon.SetCursorPosition`, `UiSystemSelectBallon.Open/UpdateButton` | |
+| Settings | `UiConfigWindow.Open/SetItem/Set*` | Option buttons have no Text: language and control labels from `text[]`, screen mode from `txt_full`/`txt_win`, resolution from `resoText[]` |
+| Key Config | `UiConfigHelpWindow.Open/SetCursor/SetController/KeyAssign` | In edit mode **any A-Z/0-9/Space press assigns** to the focused row (`KeyAssign` runs before navigation) |
+| Menus (camp, shop, save, result) | `UiChoices.OnSelect` + every `SelectLogic` | Spoken in LateUpdate: row text, position from `UiCampContentController` (`CurrentContentNo`/`contentMaxNum`), description from the row's `ItemData`/`SkillData`, camp message bar |
+| Save / Load | `UiSaveLoadWindow.Open` | caption, "No save data" |
+| Shop quantity | `UiShopConfirmation.Open/Update_Number` | |
+| Battle | `UiBattleWindow.*`, `UiBattleScrollList.SetCursorPosOnScrollList` | turn + HP/MP, commands, targets with HP + buff/debuff names, skill grid with cost and description, HUD numbers batched per frame, skill names, Setsuna-system names, Momentum gauge stocks, 0.5 s Momentum press window = tone |
+| Field | `GuiManager.OpenTelop*`, `SceneManager.CameraSetting` | place names; scanner over `NPCControl`, `ItemBox` (`isOn` = opened), `MapJump` (destination via `GetFloorData`), `SavePoint`, `ShiningPoint` (`isPopItem && !isItemGet`) |
+
+**Singletons create themselves on access** (`SingletonMonoBehaviour.Instance` adds a new GameObject when
+none exists). Never poll `SceneManager`, `BattleManager`, `FieldPartyManager` from the mod outside the
+state where they already exist; the field code checks the level name contains "_" first.

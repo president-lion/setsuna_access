@@ -43,17 +43,28 @@ namespace SetsunaAccess
         private static string Value(UiConfigWindow win, int row)
         {
             if (row < 0 || row >= RowValue.Length) return null;
-            var buttons = Reflect.Arr(win, RowButtons[row]);
             var chosen = Reflect.Int(win, RowValue[row]);
-            if (buttons == null || chosen < 0 || chosen >= buttons.Length) return null;
-            var go = buttons.GetValue(chosen) as GameObject;
-            var t = go == null ? null : (go.GetComponent<Text>() ?? go.GetComponentInChildren<Text>());
-            if (t == null && row == 2)
+            if (chosen < 0) return null;
+            // The option buttons are bare images; each label lives somewhere else in the window.
+            switch (row)
             {
-                var reso = Reflect.Arr(win, "resoText");
-                if (reso != null && chosen < reso.Length) t = reso.GetValue(chosen) as Text;
+                case 0: return Label(win, 2 + chosen);   // TEXT_ID ENGLISH, JAPANESE (LANGUAGE_BUTTON order)
+                case 3: return Label(win, 7 + chosen);   // TEXT_ID KEYBOARD, PAD (CONTROLLER order)
+                case 2:                                  // resoText is in RESO order
+                {
+                    var reso = Reflect.Arr(win, "resoText");
+                    var t = reso != null && chosen < reso.Length ? reso.GetValue(chosen) as Text : null;
+                    return t == null ? null : TextClean.Clean(t.text);
+                }
+                case 1:                                  // SCREEN: FULL, WINDOW -> size/txt_full, size/txt_win
+                {
+                    var buttons = Reflect.Arr(win, "screenButton");
+                    var go = buttons != null && chosen < buttons.Length ? buttons.GetValue(chosen) as GameObject : null;
+                    var t = go == null ? null : Ui.FindNear<Text>(go.transform, chosen == 0 ? "txt_full" : "txt_win");
+                    return t == null ? null : TextClean.Clean(t.text);
+                }
             }
-            return t == null ? null : TextClean.Clean(t.text);
+            return null;
         }
 
         private static string Label(UiConfigWindow win, int textId)

@@ -9,13 +9,19 @@ namespace SetsunaAccess
     /// </summary>
     internal static class Dialogue
     {
+        private static string _suppress;
+
+        /// <summary>Text already spoken by a more specific hook (battle skill names); skip its typing.</summary>
+        public static void Suppress(string text) { _suppress = text; }
+
         public static void OnPage(DisplayOneByOneText typer, string fullText)
         {
+            if (_suppress != null && fullText == _suppress) { _suppress = null; return; }
             var text = TextClean.Clean(fullText);
             if (text.Length == 0) return;
 
             string speaker = null;
-            var interrupt = true;
+            var interrupt = false; // system text (battle notices, pick-ups) queues; dialogue interrupts
             var balloon = typer.GetComponentInParent<UiMessageBalloon>();
             if (balloon != null)
             {

@@ -36,3 +36,37 @@ public class RepeatFilterTests
         Assert.True(f.Allow("b", t.AddMilliseconds(610)));
     }
 }
+
+public class MoreStringsTests
+{
+    [Theory]
+    [InlineData("Alpha1", "1")]
+    [InlineData("LeftControl", "Left Control")]
+    [InlineData("W", "W")]
+    [InlineData("None", "not assigned")]
+    public void KeyNames(string code, string spoken) => Assert.Equal(spoken, Strings.KeyName(code));
+
+    [Fact] public void HudDamage() => Assert.Equal("Goblin 120 damage", Strings.Hud("DAMAGE_HP", "Goblin", "120"));
+    [Fact] public void HudHeal() => Assert.Equal("Aqua recovers 50 HP", Strings.Hud("RECOVERY_HP", "Aqua", "50"));
+    [Fact] public void HudStatusUsesGameWord() => Assert.Equal("Goblin Poison", Strings.Hud("DEBUFF", "Goblin", "Poison"));
+    [Fact] public void HudKillWithoutText() => Assert.Equal("Goblin defeated", Strings.Hud("KILL", "Goblin", ""));
+
+    [Fact] public void Directions()
+    {
+        Assert.Equal("up", Strings.Direction(0));
+        Assert.Equal("down left", Strings.Direction(5));
+        Assert.Equal("up", Strings.Direction(8));
+    }
+
+    [Fact] public void Distances()
+    {
+        Assert.Equal("close", Strings.Distance(1));
+        Assert.Equal("7 meters", Strings.Distance(7));
+    }
+
+    [Fact] public void Exits()
+    {
+        Assert.Equal("Exit", Strings.Exit(""));
+        Assert.Equal("Exit to Village", Strings.Exit("Village"));
+    }
+}
