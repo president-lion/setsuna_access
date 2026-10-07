@@ -1,0 +1,9 @@
+bin/
+obj/
+*.user
+.vs/
+src/prism/
+tools/dl/
+# Full decompiled game source and crash dumps: regenerate locally, never publish.
+research/decomp/
+research/ml_crashes/

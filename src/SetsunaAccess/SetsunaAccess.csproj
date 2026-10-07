@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net35</TargetFramework>
+    <PlatformTarget>x86</PlatformTarget>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>SetsunaAccess</AssemblyName>
+    <RootNamespace>SetsunaAccess</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>portable</DebugType>
+    <!-- Override on the command line: dotnet build -p:GamePath=... -->
+    <GamePath Condition="'$(GamePath)' == ''">E:\modgames\setsuna\I.am.Setsuna</GamePath>
+    <MLDir>$(GamePath)\MelonLoader</MLDir>
+    <Managed>$(GamePath)\SETSUNA_Data\Managed</Managed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Private=false: the game and the loader supply these, we must not ship copies. -->
+  <ItemGroup>
+    <!-- MelonLoader 0.5.7: the newest release that boots on Unity 5.2's Mono (see FINDINGS.md). -->
+    <Reference Include="$(MLDir)\MelonLoader.dll" Private="false" />
+    <Reference Include="$(MLDir)\0Harmony.dll" Private="false" />
+    <Reference Include="$(Managed)\Assembly-CSharp.dll" Private="false" />
+    <Reference Include="$(Managed)\Assembly-CSharp-firstpass.dll" Private="false" />
+    <Reference Include="$(Managed)\UnityEngine.dll" Private="false" />
+    <Reference Include="$(Managed)\UnityEngine.UI.dll" Private="false" />
+  </ItemGroup>
+
+  <!-- Deploy: the mod into Mods\, Prism into UserLibs\. Skipped while the game runs (see deploy.sh). -->
+  <Target Name="Deploy" AfterTargets="Build" Condition="Exists('$(GamePath)\MelonLoader') And '$(SkipDeploy)' != 'true'">
+    <MakeDir Directories="$(GamePath)\Mods;$(GamePath)\UserLibs" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GamePath)\Mods" />
+    <Copy SourceFiles="..\prism\build-x86\prism.dll" DestinationFolder="$(GamePath)\UserLibs"
+          Condition="Exists('..\prism\build-x86\prism.dll')" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

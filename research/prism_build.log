@@ -1,0 +1,95 @@
+'vswhere.exe' is not recognized as an internal or external command,
+operable program or batch file.
+**********************************************************************
+** Visual Studio 2026 Developer Command Prompt v18.0
+** Copyright (c) 2026 Microsoft Corporation
+**********************************************************************
+[vcvarsall.bat] Environment initialized for: 'x86'
+-- The C compiler identification is MSVC 19.51.36256.0
+-- The CXX compiler identification is MSVC 19.51.36256.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx86/x86/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx86/x86/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Prism dep fmt: bundled third_party/fmt
+-- Prism dep highway: bundled third_party/highway
+-- Prism dep simdutf: bundled third_party/simdutf
+-- Prism dep concurrentqueue: bundled third_party/concurrentqueue
+-- Prism dep dr_wav: bundled third_party/dr_wav
+-- Prism dep moderncom: bundled third_party/moderncom
+-- Prism backend nvda: enabled
+-- Prism backend jaws: enabled
+-- Prism backend sapi: enabled
+-- Prism backend onecore: enabled
+-- Prism backend uia: enabled
+-- Prism backend zoom_text: enabled
+-- Prism backend sense_reader: enabled
+-- Prism backend pc_talker: enabled
+-- Prism backend zdsr: enabled
+-- Prism backend boy_pc_reader: enabled
+-- Prism backend orca: enabled
+-- Prism backend speech_dispatcher: enabled
+-- Prism backend spiel: enabled
+-- Prism backends: nvda=on jaws=on sapi=on onecore=on uia=on zoom_text=on sense_reader=on pc_talker=on zdsr=on boy_pc_reader=on system_access=legacy-off window_eyes=legacy-off orca=on speech_dispatcher=on spiel=on
+-- Performing Test PRISM_MSVC_UTF8
+-- Performing Test PRISM_MSVC_UTF8 - Success
+-- Performing Test PRISM_MSVC_BIGOBJ
+-- Performing Test PRISM_MSVC_BIGOBJ - Success
+-- Performing Test PRISM_MSVC_ZC_ENUMTYPES
+-- Performing Test PRISM_MSVC_ZC_ENUMTYPES - Success
+-- Configuring done (10.6s)
+-- Generating done (0.3s)
+-- Build files have been written to: E:/modgames/setsuna/mod/src/prism/build-x86
+[0/2] Re-checking globbed directories...
+[1/41] Building C object CMakeFiles\prism_dep_dr_wav.dir\third_party\dr_wav\wav.c.obj
+[2/41] Building CXX object CMakeFiles\prism_dep_simdutf.dir\third_party\simdutf\simdutf.cpp.obj
+[3/41] MIDL: nvdaController targeting win32
+Processing E:\modgames\setsuna\mod\src\prism\idl\nvdaController.idl
+nvdaController.idl
+Processing E:\modgames\setsuna\mod\src\prism\idl\nvdaController.acf
+nvdaController.acf
+E:/modgames/setsuna/mod/src/prism/idl/nvdaController.idl(149) : warning MIDL2504 : callback routine uses call back handles; additional handle specification ignored : [ Procedure 'onSsmlMarkReached' ( Interface 'NvdaController2' ) ]
+[4/41] Building CXX object CMakeFiles\prism_dep_fmt.dir\third_party\fmt\src\os.cc.obj
+[5/41] Building CXX object CMakeFiles\prism_dep_highway.dir\third_party\highway\hwy\abort.cc.obj
+[6/41] Building CXX object CMakeFiles\prism_dep_highway.dir\third_party\highway\hwy\print.cc.obj
+[7/41] Building CXX object CMakeFiles\prism_dep_fmt.dir\third_party\fmt\src\format.cc.obj
+[8/41] Building CXX object CMakeFiles\prism_dep_highway.dir\third_party\highway\hwy\targets.cc.obj
+[9/41] Building CXX object CMakeFiles\prism_dep_highway.dir\third_party\highway\hwy\timer.cc.obj
+[10/41] Building CXX object CMakeFiles\prism_dep_highway.dir\third_party\highway\hwy\per_target.cc.obj
+[11/41] Building CXX object CMakeFiles\prism.dir\source\power_notifier.cpp.obj
+[12/41] Building CXX object CMakeFiles\prism_backend_speech_dispatcher.dir\source\backends\speech_dispatcher.cpp.obj
+[13/41] Building CXX object CMakeFiles\prism_backend_pc_talker.dir\source\backends\pc_talker.cpp.obj
+[14/41] Building CXX object CMakeFiles\prism_backend_orca.dir\source\backends\orca.cpp.obj
+[15/41] Building CXX object CMakeFiles\prism_backend_spiel.dir\source\backends\spiel.cpp.obj
+[16/41] Building CXX object CMakeFiles\prism_backend_boy_pc_reader.dir\source\backends\boy_pc_reader.cpp.obj
+[17/41] Building CXX object CMakeFiles\prism_backend_sense_reader.dir\source\backends\sense_reader.cpp.obj
+[18/41] Building CXX object CMakeFiles\prism_backend_zdsr.dir\source\backends\zdsr.cpp.obj
+[19/41] Building CXX object CMakeFiles\prism_backend_jaws.dir\source\backends\jaws.cpp.obj
+[20/41] Building CXX object CMakeFiles\prism_backend_zoom_text.dir\source\backends\zoom_text.cpp.obj
+[21/41] Building CXX object CMakeFiles\prism.dir\source\simd_kernels.cpp.obj
+[22/41] Building C object CMakeFiles\prism.dir\source\backends\raw\fsapi.c.obj
+[23/41] Building C object CMakeFiles\prism.dir\generated\nvda_controller.c.obj
+[24/41] Building C object CMakeFiles\prism.dir\source\backends\raw\wineyes.c.obj
+[25/41] Building CXX object CMakeFiles\prism.dir\source\backend_catalog.cpp.obj
+[26/41] Building CXX object CMakeFiles\prism_backend_sapi.dir\source\backends\sapi.cpp.obj
+[27/41] Building CXX object CMakeFiles\prism_backend_uia.dir\source\backends\uia.cpp.obj
+[28/41] Building CXX object CMakeFiles\prism.dir\source\utils.cpp.obj
+[29/41] Building CXX object CMakeFiles\prism.dir\source\logging.cpp.obj
+[30/41] Building CXX object CMakeFiles\prism.dir\source\backend_check.cpp.obj
+[31/41] Building CXX object CMakeFiles\prism.dir\source\backend_enumerator.cpp.obj
+[32/41] Building CXX object CMakeFiles\prism.dir\source\frozen_registry.cpp.obj
+[33/41] Building CXX object CMakeFiles\prism.dir\source\poll_waiter.cpp.obj
+[34/41] Building CXX object CMakeFiles\prism.dir\source\plugin_loader.cpp.obj
+[35/41] Building CXX object CMakeFiles\prism.dir\source\prism.cpp.obj
+[36/41] Building CXX object CMakeFiles\prism.dir\source\backends\custom_backend.cpp.obj
+[37/41] Building CXX object CMakeFiles\prism.dir\source\optional_library.cpp.obj
+[38/41] Building CXX object CMakeFiles\prism_backend_nvda.dir\source\backends\nvda.cpp.obj
+[39/41] Building CXX object CMakeFiles\prism_backend_onecore.dir\source\backends\onecore.cpp.obj
+[40/41] Linking CXX shared library prism.dll
+BUILD_OK
