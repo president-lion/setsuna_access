@@ -65,8 +65,10 @@ shops by calling C#. Hooking the C# side catches everything without touching Lua
   title. The level stays `Boot` until the player leaves it with Exit Settings.
 - Settings rows (`ITEM`): Language, Screen Mode, Resolution, Control Type, Exit Settings. Up/down picks
   a row, left/right changes it, Confirm on Control Type opens Key Config (`UiConfigHelpWindow`, not yet read).
-- Keyboard defaults (`InputManager.ResetKeyBoardSetting`): Confirm = Return or Space, Cancel = K,
-  move = W/A/S/D (arrow keys also feed Unity's Horizontal/Vertical axes), menu = I, Momentum = Left Ctrl.
+- Keyboard defaults (`InputManager.ResetKeyBoardSetting`): Confirm = Return or slot 1 (Space); move =
+  W/A/S/D (slots 9-12, read directly in `InputManager`). Other slots, by the pad names at the same index:
+  2 Cross = K, 3 Square = H, 4 Triangle = J, 5 RightShoulder = I, 6 LeftShoulder = U, 7 Start = 1,
+  8 Select = Left Ctrl, 13 = M, 14 = N, 15 = Delete. Which action each drives is still to be read.
 - Title (`UiTitleMain`): Up *increments* the index; 0 = New Game, 1 = Load Game; left/right on Load flips
   to Delete (`buttonIndex02`). The first key on "Press Any Button" also counts as a move.
 - Mod keys: F3 repeat, F11 UI dump. **F12 belongs to the user's NVDA** (speech history).
