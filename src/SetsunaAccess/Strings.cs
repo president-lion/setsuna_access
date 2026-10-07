@@ -24,7 +24,7 @@ namespace SetsunaAccess
         public const string Help =
             "F1 help. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
             "Control page up and page down, scanner category. Home, where is the selected object. " +
-            "Control home, walk to it; any movement key stops. End, beacon tone toward it. F9 party status. F11 screen text dump.";
+            "Control home, walk to it; any movement key stops. End, beacon tone toward it. P party status. F11 screen text dump.";
         public static string DefaultName(string name) { return "Default: " + name; }
         public static string Deleted(string text) { return "deleted " + text; }
         public static string NameChosen(string name) { return name + "."; }

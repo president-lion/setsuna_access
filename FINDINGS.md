@@ -72,7 +72,7 @@ shops by calling C#. Hooking the C# side catches everything without touching Lua
 - Title (`UiTitleMain`): Up *increments* the index; 0 = New Game, 1 = Load Game; left/right on Load flips
   to Delete (`buttonIndex02`). The first key on "Press Any Button" also counts as a move.
 - Mod keys (Stardew Access layout, user's request): Z location, PageUp/PageDown object, Ctrl+PageUp/PageDown
-  category, Home object info, Ctrl+Home walk to object, End beacon, F1 help, F3 repeat, F9 party, F11 dump.
+  category, Home object info, Ctrl+Home walk to object, End beacon, F1 help, F3 repeat, P party HP/MP, F11 dump.
   **F12 belongs to the user's NVDA** (speech history). Left Ctrl is the game's "Select", used only on the Key
   Config help screen (`UiConfigHelpWindow.UpdateInfo`), so Ctrl combos are safe elsewhere.
 - Player movement: `BaseObject.CreateMoveVec` = camera-right * Horizontal + cross(camera-right, up) * Vertical,

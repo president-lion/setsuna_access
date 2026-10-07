@@ -46,9 +46,10 @@ namespace SetsunaAccess
             var ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
             if (Input.GetKeyDown(KeyCode.F1)) Speech.Say(Strings.Help);
             if (Input.GetKeyDown(KeyCode.F3)) Speech.Repeat();
-            if (Input.GetKeyDown(KeyCode.F9)) Field.SayParty();
-            // Z is a letter: not while a name is being typed.
-            if (Input.GetKeyDown(KeyCode.Z) && !NameEntry.Open && !Setsuna.GuiManager.IsInputName) Field.SayLocation();
+            // Z and P are letters: not while a name is being typed.
+            var typing = NameEntry.Open || Setsuna.GuiManager.IsInputName;
+            if (Input.GetKeyDown(KeyCode.Z) && !typing) Field.SayLocation();
+            if (Input.GetKeyDown(KeyCode.P) && !typing) Field.SayParty();
             if (Input.GetKeyDown(KeyCode.PageUp)) { if (ctrl) Field.NextCategory(-1); else Field.Cycle(-1); }
             if (Input.GetKeyDown(KeyCode.PageDown)) { if (ctrl) Field.NextCategory(1); else Field.Cycle(1); }
             if (Input.GetKeyDown(KeyCode.Home)) { if (ctrl) Field.WalkToSelected(); else Field.RepeatSelected(); }
