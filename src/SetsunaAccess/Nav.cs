@@ -18,7 +18,7 @@ namespace SetsunaAccess
     {
         public const float CellSize = 0.5f;
         private const float MaxRise = 0.5f, MaxDrop = 0.45f;
-        // Ground-layer geometry higher than this above a cell's floor is a wall, not a step.
+        // Height of the thin wall check between cells: ground-layer geometry crossing it is a rock face.
         private const float WallCheckHeight = 0.6f;
 
         private static int _groundMask = -1, _blockMask;
@@ -152,7 +152,7 @@ namespace SetsunaAccess
             if (!stale) return;
             var start = ToCell(player);
             _ground[start] = player.y;
-            _job = new GridPath.FloodJob(start, CanStep, 30000);
+            _job = new GridPath.FloodJob(start, CanStepLenient, 30000);
             _jobFrom = player;
             _reachDirty = false;
         }
@@ -250,7 +250,11 @@ namespace SetsunaAccess
             }
         }
 
-        private static bool CanStep(Cell from, Cell to)
+        /// <summary>
+        /// Lenient stepping for the scanner's reachability filter: ground and walls, but not the knee-height
+        /// rock-face line, so the filter only hides things there's truly no way to.
+        /// </summary>
+        private static bool CanStepLenient(Cell from, Cell to)
         {
             if (_blocked.Contains(to)) return false;
             float fromY;
@@ -258,6 +262,20 @@ namespace SetsunaAccess
             var toY = Ground(to, fromY);
             if (float.IsNaN(toY) || toY > fromY + MaxRise || toY < fromY - MaxDrop) return false;
             return Clear(to, toY);
+        }
+
+        private static bool CanStep(Cell from, Cell to)
+        {
+            if (_blocked.Contains(to)) return false;
+            float fromY;
+            if (!_ground.TryGetValue(from, out fromY) || float.IsNaN(fromY)) return false;
+            var toY = Ground(to, fromY);
+            if (float.IsNaN(toY) || toY > fromY + MaxRise || toY < fromY - MaxDrop) return false;
+            if (!Clear(to, toY)) return false;
+            // Rock faces and cliffs are part of the ground mesh (HitGround), and a downward ray that starts
+            // inside one misses it. A thin line at knee height between the two cells catches the face, while
+            // branches, arches and overhangs above it don't count (a full-height check hid real paths).
+            return !Physics.Linecast(Center(from, fromY + WallCheckHeight), Center(to, toY + WallCheckHeight), _groundMask);
         }
 
         /// <summary>Ground height in a cell, probing from just above the neighbour's height (bridges, stairs).</summary>
@@ -280,11 +298,7 @@ namespace SetsunaAccess
             var h = Mathf.Max(FieldPartyManager.CollisionHeight, r * 2f + 0.2f);
             var p = Center(c, y);
             ok = !Physics.CheckCapsule(p + Vector3.up * (r + 0.3f), p + Vector3.up * Mathf.Max(h - r, r + 0.31f), r,
-                                       _blockMask, QueryTriggerInteraction.Ignore)
-                 // Rock faces and cliffs are part of the ground mesh (HitGround). Check that layer too, but
-                 // from above step height so the floor, slopes and small steps never count as walls.
-                 && !Physics.CheckCapsule(p + Vector3.up * (WallCheckHeight + r), p + Vector3.up * Mathf.Max(h - r, WallCheckHeight + r + 0.01f), r,
-                                          _groundMask, QueryTriggerInteraction.Ignore);
+                                       _blockMask, QueryTriggerInteraction.Ignore);
             _clear[c] = ok;
             return ok;
         }
@@ -306,7 +320,7 @@ namespace SetsunaAccess
             var origin = a + Vector3.up * (r + 0.35f);
             var dir = flat / dist;
             if (Physics.SphereCast(origin, r, dir, out _hit, dist, _blockMask, QueryTriggerInteraction.Ignore)) return false;
-            if (Physics.SphereCast(a + Vector3.up * (WallCheckHeight + r), r, dir, out _hit, dist, _groundMask, QueryTriggerInteraction.Ignore)) return false;
+            if (Physics.Linecast(a + Vector3.up * WallCheckHeight, b + Vector3.up * WallCheckHeight, _groundMask)) return false;
             var y = a.y;
             for (var t = CellSize; t < dist; t += CellSize)
             {

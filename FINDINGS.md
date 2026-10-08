@@ -171,3 +171,7 @@ av.log`.
   capsule (and straight-line SphereCast) raised 0.6 m above the cell floor.
 - Scanner/beacon lag: the reachability flood now runs as `GridPath.FloodJob` slices (2 ms/frame);
   clearance results kept 8 s; re-plan every 4 s; route budgets 8000 / retry 3000.
+- The full-height HitGround capsule was too strict (flood boxed in at ~30 m in Dazzshire Woods, hiding
+  reachable chests). Replaced with a knee-height (0.6 m) `Physics.Linecast` between neighbouring cells, for
+  routes only; the scanner filter floods with lenient rules (no rock-face line) so it never over-hides.
+- perf.log in play: mod 0.01-0.05 ms/frame, 60 fps. High CPU is the game, not the mod.
