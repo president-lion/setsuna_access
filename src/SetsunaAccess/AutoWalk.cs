@@ -118,6 +118,12 @@ namespace SetsunaAccess
 
             // No plan found a way. The probes have been wrong (Serendale), so try straight at it rather than
             // refuse; the no-progress check below stops it if it really can't get there.
+            // The world map's walls are mountains and sea: a straight line into them just bumps.
+            if (Guide.NoRoute && GameManager.NowGameState == GAME_STATE.WORLD)
+            {
+                Stop(Strings.NoWorldRoute(_name));
+                return;
+            }
             if (Guide.NoRoute && !_saidStraight)
             {
                 _saidStraight = true;

@@ -319,3 +319,9 @@ arrival point so N on the world map and in room 3 keeps routing to the right ent
 exits the player can't reach. Failed route chains now retry every 12 s instead of 5 s.
 CPU: perf.log gets a "cpu" line every 10 s (process CPU, busiest threads named by the DLL their start address
 is in, via Toolhelp32 + GetThreadTimes + NtQueryInformationThread class 9) plus garbage-collection counts.
+
+World map routes (2026-10-08): walking to Frost Caves' far entrance (-95.5, -30), the full-body plan exhausted a
+closed area (~4000 cells), then the slim and lenient fallbacks routed through HitWall gaps the party can't pass,
+and walk-to bumped along them. On the world map the fallbacks are now off (full + loose goal only), and walk-to
+stops with "No way to walk to X from here" instead of trying straight. Room 2's upper ledge drops to the floor
+but can't be climbed from it (offline: flood from the ledge reaches the floor, not the reverse).

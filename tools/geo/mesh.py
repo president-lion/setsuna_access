@@ -29,6 +29,6 @@ for o in env.objects:
             F.append([int(t.split('/')[0])-1 for t in line.split()[1:4]])
     V=np.array(V); V[:,0]*=-1  # UnityPy obj export flips x
     Vw=(M@np.c_[V,np.ones(len(V))].T).T[:,:3]
-    out[go.m_Name]=(Vw,np.array(F))
+    out[go.m_Name + "#" + str(o.path_id)]=(Vw,np.array(F))
     print(go.m_Name, len(V), len(F), Vw.min(0).round(1), Vw.max(0).round(1))
 pickle.dump(out, open(sys.argv[2],'wb'))
