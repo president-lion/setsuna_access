@@ -136,8 +136,42 @@ namespace SetsunaAccess
             Speech.Say(_beacon ? Strings.BeaconOn : Strings.BeaconOff);
         }
 
+        // Bump detection: the player is pushing a direction but the leader isn't moving.
+        private static Vector3 _bumpPos;
+        private static float _bumpSince = -1f, _nextBump;
+
+        private static void BumpTick()
+        {
+            if (!InField()) return;
+            var gs = GameManager.NowGameState;
+            if ((gs != GAME_STATE.FIELD && gs != GAME_STATE.WORLD) || EventManager.IsEvent || UiCampManager.IsShowing
+                || GuiManager.IsShowingMessageWindow || UiShopManager.IsShowing)
+            {
+                _bumpSince = -1f;
+                return;
+            }
+            var leader = Player();
+            var pushing = InputManager.Horizontal != 0f || InputManager.Vertical != 0f;
+            if (leader == null || !pushing) { _bumpSince = -1f; return; }
+
+            var now = Time.unscaledTime;
+            if (_bumpSince < 0f) { _bumpSince = now; _bumpPos = leader.position; return; }
+            if (now - _bumpSince < 0.25f) return;
+
+            var moved = leader.position - _bumpPos;
+            moved.y = 0f;
+            if (moved.magnitude < 0.08f && now >= _nextBump)
+            {
+                Tones.Bump();
+                _nextBump = now + 0.45f;
+            }
+            _bumpSince = now;
+            _bumpPos = leader.position;
+        }
+
         public static void Tick()
         {
+            BumpTick();
             if (!_beacon || _selected == null || Time.unscaledTime < _nextBeep) return;
             if (!InField() || !_selected.gameObject.activeInHierarchy) return;
             var gs = GameManager.NowGameState;

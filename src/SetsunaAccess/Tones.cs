@@ -24,6 +24,9 @@ namespace SetsunaAccess
 
         public static void Momentum() { Play(1320f, 0.09f, 0f, 0.5f); }
 
+        /// <summary>Low thud: walking into something.</summary>
+        public static void Bump() { Play(160f, 0.06f, 0f, 0.5f); }
+
         /// <summary>Walking beacon: pan -1..1 (left..right), pitch multiplier.</summary>
         public static void Beacon(float pan, float pitch) { Play(660f * pitch, 0.07f, pan, 0.35f); }
 
