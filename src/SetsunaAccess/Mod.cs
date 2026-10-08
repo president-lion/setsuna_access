@@ -27,6 +27,8 @@ namespace SetsunaAccess
             catch (Exception ex) { Log.Once("Results", ex); }
             try { NameEntry.Tick(); }
             catch (Exception ex) { Log.Once("NameEntry", ex); }
+            try { Nav.Tick(); }
+            catch (Exception ex) { Log.Once("Nav", ex); }
             try { Field.Tick(); }
             catch (Exception ex) { Log.Once("Field", ex); }
         }

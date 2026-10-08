@@ -94,6 +94,51 @@ namespace SetsunaAccess
             return seen;
         }
 
+        /// <summary>
+        /// A flood fill that can be run a slice at a time (so it never stalls a frame).
+        /// Same stepping rules as Flood.
+        /// </summary>
+        public sealed class FloodJob
+        {
+            private readonly Func<Cell, Cell, bool> _canStep;
+            private readonly int _maxCells;
+            private readonly Queue<Cell> _queue = new Queue<Cell>();
+            public readonly HashSet<Cell> Seen = new HashSet<Cell>();
+            public bool Done { get; private set; }
+            public bool Complete { get; private set; }
+
+            public FloodJob(Cell start, Func<Cell, Cell, bool> canStep, int maxCells)
+            {
+                _canStep = canStep;
+                _maxCells = maxCells;
+                Seen.Add(start);
+                _queue.Enqueue(start);
+            }
+
+            /// <summary>Expand up to maxExpand cells; returns Done.</summary>
+            public bool Step(int maxExpand)
+            {
+                while (!Done && maxExpand-- > 0)
+                {
+                    if (_queue.Count == 0) { Done = true; Complete = true; break; }
+                    if (Seen.Count >= _maxCells) { Done = true; Complete = false; break; }
+                    var cur = _queue.Dequeue();
+                    for (var dx = -1; dx <= 1; dx++)
+                        for (var dz = -1; dz <= 1; dz++)
+                        {
+                            if (dx == 0 && dz == 0) continue;
+                            var next = new Cell(cur.X + dx, cur.Z + dz);
+                            if (Seen.Contains(next)) continue;
+                            if (dx != 0 && dz != 0 && (!_canStep(cur, new Cell(cur.X + dx, cur.Z)) || !_canStep(cur, new Cell(cur.X, cur.Z + dz)))) continue;
+                            if (!_canStep(cur, next)) continue;
+                            Seen.Add(next);
+                            _queue.Enqueue(next);
+                        }
+                }
+                return Done;
+            }
+        }
+
         /// <summary>Octile distance.</summary>
         public static float H(Cell a, Cell b)
         {

@@ -104,4 +104,21 @@ public class GridPathTests
         Assert.False(complete);
         Assert.Equal(4, reached.Count);
     }
+
+    [Fact]
+    public void FloodJobInSlicesMatchesFlood()
+    {
+        var (s, _, step) = Map(
+            "S...#....",
+            "....#....",
+            ".........");
+        var whole = GridPath.Flood(s, step, 1000, out var complete);
+        var job = new GridPath.FloodJob(s, step, 1000);
+        var slices = 0;
+        while (!job.Step(2)) slices++;
+        Assert.True(slices > 1);
+        Assert.True(job.Complete);
+        Assert.Equal(complete, job.Complete);
+        Assert.True(whole.SetEquals(job.Seen));
+    }
 }

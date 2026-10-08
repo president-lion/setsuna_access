@@ -30,7 +30,7 @@ namespace SetsunaAccess
         private static Vector3 Center(Cell c, float y) { return new Vector3((c.X + 0.5f) * CellSize, y, (c.Z + 0.5f) * CellSize); }
 
         /// <summary>Remember a cell the player couldn't get through, until the map changes.</summary>
-        public static void MarkBlocked(Vector3 p) { _blocked.Add(ToCell(p)); _reach = null; }
+        public static void MarkBlocked(Vector3 p) { _blocked.Add(ToCell(p)); _reachDirty = true; }
 
         /// <summary>
         /// The player pushed toward dir and didn't move. Mark a short strip of cells across the way as
@@ -47,7 +47,7 @@ namespace SetsunaAccess
             var side = Vector3.Cross(Vector3.up, dir);
             var ahead = pos + dir * (CellSize * 1.2f);
             for (var i = -1; i <= 1; i++) _blocked.Add(ToCell(ahead + side * (i * CellSize)));
-            _reach = null;
+            _reachDirty = true;
 
             var probe = pos + dir * 0.5f + Vector3.up * 0.8f;
             var player = LayerMask.NameToLayer("Player");
@@ -71,10 +71,10 @@ namespace SetsunaAccess
         /// Route from <paramref name="from"/> to within <paramref name="goalRadius"/> of <paramref name="to"/>:
         /// world points, first = start. Null if no walkable route was found.
         /// </summary>
-        public static List<Vector3> FindRoute(Vector3 from, Vector3 to, float goalRadius)
+        public static List<Vector3> FindRoute(Vector3 from, Vector3 to, float goalRadius, int budget = 8000)
         {
             Prepare();
-            _clear.Clear(); // people move; ground doesn't
+            ExpireClearance();
             var start = ToCell(from);
             _ground[start] = from.y;
             var target = ToCell(to);
@@ -85,7 +85,7 @@ namespace SetsunaAccess
                 var d = Center(c, 0f) - new Vector3(to.x, 0f, to.z);
                 return d.sqrMagnitude <= r2;
             };
-            var cells = GridPath.Find(start, target, isGoal, CanStep, 12000);
+            var cells = GridPath.Find(start, target, isGoal, CanStep, budget);
             if (cells == null) return null;
             var pts = new List<Vector3>(cells.Count);
             foreach (var c in cells)
@@ -99,41 +99,32 @@ namespace SetsunaAccess
 
         // ---- reachability (scanner filter) -------------------------------------------------
 
+        // Last finished flood and the one running in the background (a slice per frame, see Tick).
         private static HashSet<Cell> _reach;
         private static bool _reachComplete;
         private static float _reachMaxDist;
         private static Vector3 _reachFrom;
         private static float _reachAt = -100f;
         private static string _reachScene;
+        private static GridPath.FloodJob _job;
+        private static Vector3 _jobFrom;
+        private static bool _reachDirty;
+        private static readonly System.Diagnostics.Stopwatch _watch = new System.Diagnostics.Stopwatch();
 
         public enum Reach { Yes, No, Unknown }
 
         /// <summary>
-        /// Can the player walk to within <paramref name="slack"/> of <paramref name="p"/>? One flood fill from
-        /// the player, reused for a few seconds while they stay put. Unknown = beyond what the fill covered.
+        /// Can the player walk to within <paramref name="slack"/> of <paramref name="p"/>? Answers from the
+        /// last finished flood fill and never waits for a new one; Unknown when there's no usable fill yet
+        /// or p is beyond what it covered.
         /// </summary>
         public static Reach CanReach(Vector3 player, Vector3 p, float slack)
         {
             Prepare();
-            var now = Time.unscaledTime;
+            RequestFlood(player);
+            if (_reach == null || _reachScene != _scene) return Reach.Unknown;
             var moved = player - _reachFrom; moved.y = 0f;
-            if (_reach == null || _reachScene != _scene || now - _reachAt > 5f || moved.magnitude > 2f)
-            {
-                _clear.Clear();
-                var start = ToCell(player);
-                _ground[start] = player.y;
-                _reach = GridPath.Flood(start, CanStep, 40000, out _reachComplete);
-                _reachFrom = player;
-                _reachAt = now;
-                _reachScene = _scene;
-                _reachMaxDist = 0f;
-                foreach (var c in _reach)
-                {
-                    var d = Center(c, 0f) - new Vector3(player.x, 0f, player.z);
-                    if (d.magnitude > _reachMaxDist) _reachMaxDist = d.magnitude;
-                }
-                Log.Append("nav.log", "flood " + _reach.Count + " cells, complete=" + _reachComplete + ", radius " + _reachMaxDist.ToString("0"));
-            }
+            if (moved.magnitude > 12f) return Reach.Unknown;
 
             var center = ToCell(p);
             var n = Mathf.CeilToInt(slack / CellSize);
@@ -146,12 +137,52 @@ namespace SetsunaAccess
                     if (d.magnitude <= slack + CellSize * 0.75f) return Reach.Yes;
                 }
             if (_reachComplete) return Reach.No;
-            var far = p - player; far.y = 0f;
+            var far = p - _reachFrom; far.y = 0f;
             return far.magnitude < _reachMaxDist - 2f ? Reach.No : Reach.Unknown;
         }
 
+        private static void RequestFlood(Vector3 player)
+        {
+            if (_job != null) return;
+            var moved = player - _reachFrom; moved.y = 0f;
+            var stale = _reach == null || _reachScene != _scene || _reachDirty
+                        || Time.unscaledTime - _reachAt > 10f || moved.magnitude > 3f;
+            if (!stale) return;
+            var start = ToCell(player);
+            _ground[start] = player.y;
+            _job = new GridPath.FloodJob(start, CanStep, 30000);
+            _jobFrom = player;
+            _reachDirty = false;
+        }
+
+        /// <summary>Per frame: advance the background flood for at most ~2 ms.</summary>
+        public static void Tick()
+        {
+            if (_job == null) return;
+            if (Application.loadedLevelName != _scene) { _job = null; return; }
+            _watch.Reset();
+            _watch.Start();
+            while (!_job.Done && _watch.ElapsedMilliseconds < 2) _job.Step(40);
+            _watch.Stop();
+            if (!_job.Done) return;
+
+            _reach = _job.Seen;
+            _reachComplete = _job.Complete;
+            _reachFrom = _jobFrom;
+            _reachAt = Time.unscaledTime;
+            _reachScene = _scene;
+            _reachMaxDist = 0f;
+            foreach (var c in _reach)
+            {
+                var d = Center(c, 0f) - new Vector3(_jobFrom.x, 0f, _jobFrom.z);
+                if (d.magnitude > _reachMaxDist) _reachMaxDist = d.magnitude;
+            }
+            _job = null;
+            Log.Append("nav.log", "flood " + _reach.Count + " cells, complete=" + _reachComplete + ", radius " + _reachMaxDist.ToString("0"));
+        }
+
         /// <summary>Forget the reachability fill (scene change, obstacles learned).</summary>
-        public static void InvalidateReach() { _reach = null; }
+        public static void InvalidateReach() { _reachDirty = true; }
 
         /// <summary>Index of the farthest route point (within lookAhead points) reachable straight from pos.</summary>
         public static int LookAhead(List<Vector3> route, int fromIndex, Vector3 pos, int lookAhead = 24)
@@ -190,6 +221,16 @@ namespace SetsunaAccess
         }
 
         // ---- probing --------------------------------------------------------------------
+
+        private static float _clearAt;
+
+        /// <summary>Room-to-stand results are kept a few seconds: people move, walls don't.</summary>
+        private static void ExpireClearance()
+        {
+            if (Time.unscaledTime - _clearAt < 8f) return;
+            _clear.Clear();
+            _clearAt = Time.unscaledTime;
+        }
 
         private static void Prepare()
         {

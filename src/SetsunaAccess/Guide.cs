@@ -51,9 +51,9 @@ namespace SetsunaAccess
             if (_route == null ? now >= _replanAt : (now >= _replanAt || Strayed(pos)))
             {
                 _route = Nav.FindRoute(pos, _target.position, _goal)
-                      ?? Nav.FindRoute(pos, _target.position, _goal + 1.5f); // e.g. exits past the walkable edge
+                      ?? Nav.FindRoute(pos, _target.position, _goal + 1.5f, 3000); // e.g. exits past the walkable edge
                 _index = 0;
-                _replanAt = now + (_route != null ? 2.5f : 4f);
+                _replanAt = now + (_route != null ? 4f : 5f);
                 Log.Append("nav.log", _route == null
                     ? "no route " + Fmt(pos) + " -> " + _target.name + " " + Fmt(_target.position)
                     : "route " + _route.Count + " pts, " + Nav.Length(_route, 0).ToString("0.0") + " m, " + Fmt(pos) + " -> " + _target.name);
