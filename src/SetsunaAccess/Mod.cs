@@ -41,20 +41,37 @@ namespace SetsunaAccess
 
         // The game binds letters, digits, Space, Return, Delete and Left Ctrl (Left Ctrl only matters
         // on the Key Config help screen). Z is free by default.
+        private static readonly System.Collections.Generic.Dictionary<KeyCode, float> _lastPress =
+            new System.Collections.Generic.Dictionary<KeyCode, float>();
+
+        /// <summary>
+        /// GetKeyDown with a short debounce: in play, one Page Down arrived as two key-downs ~70 ms
+        /// apart, skipping an entry each time.
+        /// </summary>
+        private static bool Pressed(KeyCode key)
+        {
+            if (!Input.GetKeyDown(key)) return false;
+            float last;
+            var now = Time.unscaledTime;
+            if (_lastPress.TryGetValue(key, out last) && now - last < 0.15f) return false;
+            _lastPress[key] = now;
+            return true;
+        }
+
         private static void Hotkeys()
         {
             var ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-            if (Input.GetKeyDown(KeyCode.F1)) Speech.Say(Strings.Help + " " + GameKeys());
-            if (Input.GetKeyDown(KeyCode.F3)) Speech.Repeat();
+            if (Pressed(KeyCode.F1)) Speech.Say(Strings.Help + " " + GameKeys());
+            if (Pressed(KeyCode.F3)) Speech.Repeat();
             // Z and P are letters: not while a name is being typed.
             var typing = NameEntry.Open || Setsuna.GuiManager.IsInputName;
-            if (Input.GetKeyDown(KeyCode.Z) && !typing) Field.SayLocation();
-            if (Input.GetKeyDown(KeyCode.P) && !typing) Field.SayParty();
-            if (Input.GetKeyDown(KeyCode.PageUp)) { if (ctrl) Field.NextCategory(-1); else Field.Cycle(-1); }
-            if (Input.GetKeyDown(KeyCode.PageDown)) { if (ctrl) Field.NextCategory(1); else Field.Cycle(1); }
-            if (Input.GetKeyDown(KeyCode.Home)) { if (ctrl) Field.WalkToSelected(); else Field.RepeatSelected(); }
-            if (Input.GetKeyDown(KeyCode.End)) Field.ToggleBeacon();
-            if (Input.GetKeyDown(KeyCode.F11))
+            if (Pressed(KeyCode.Z) && !typing) Field.SayLocation();
+            if (Pressed(KeyCode.P) && !typing) Field.SayParty();
+            if (Pressed(KeyCode.PageUp)) { if (ctrl) Field.NextCategory(-1); else Field.Cycle(-1); }
+            if (Pressed(KeyCode.PageDown)) { if (ctrl) Field.NextCategory(1); else Field.Cycle(1); }
+            if (Pressed(KeyCode.Home)) { if (ctrl) Field.WalkToSelected(); else Field.RepeatSelected(); }
+            if (Pressed(KeyCode.End)) Field.ToggleBeacon();
+            if (Pressed(KeyCode.F11))
             {
                 Log.Info("UiDump", UiDump.Write());
                 Speech.Say(Strings.UiDumped);

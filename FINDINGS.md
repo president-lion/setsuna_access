@@ -106,3 +106,8 @@ state where they already exist; the field code checks the level name contains "_
   `UiCampManager.Update`. Momentum is "Square" (H) in `UiBattleWindow.Update`.
 - The game parks NPCs it doesn't need yet far off-map (a "Mysterious Man" at 14 km in the first forest).
   The scanner ignores anything beyond 1 km. `BaseCharacter.IsVisible` is camera-frustum culling, not "hidden".
+- **Unity audio is disabled in this build** (`AudioManager.m_DisableAudio = true` in mainData); all game sound
+  is CRI. The mod's tones (beacon, Momentum window) play through winmm `PlaySound` with an in-memory WAV.
+- Techs / Weapons / Accessories / Spritnite tabs (`UiCampTab`) are face icons with no Text; the tab's
+  `parameter` (CharacterParameter) names it. Story tabs use `storyType.ToJapanese()` (localized despite the name).
+- One Page Down showed up as two key-downs ~70 ms apart in play; hotkeys are debounced 150 ms.

@@ -13,6 +13,7 @@ namespace SetsunaAccess
     internal static class Focus
     {
         private static UiChoices _pending;
+        private static UiCampTab _pendingTab;
         private static bool _queueNext;
         private static string _messageBar;
         private static string _lastBar;
@@ -21,6 +22,10 @@ namespace SetsunaAccess
         {
             // List/tab controllers are choices too, but only hand focus on to a row or tab.
             if (choice == null || choice is UiCampContentController || choice is UiCampTabController) return;
+            // Switching tabs refills the list and focuses its first row in the same frame:
+            // keep the tab so both are said ("Aeterna. Cyclone, 1 of 6 ...").
+            var tab = choice as UiCampTab;
+            if (tab != null) { _pendingTab = tab; return; }
             _pending = choice;
         }
 
@@ -36,13 +41,19 @@ namespace SetsunaAccess
         public static void LateTick()
         {
             var choice = _pending;
+            var tab = _pendingTab;
             var bar = _messageBar;
             _pending = null;
+            _pendingTab = null;
             _messageBar = null;
 
-            if (choice != null && choice.gameObject.activeInHierarchy)
+            if (choice != null && !choice.gameObject.activeInHierarchy) choice = null;
+            if (tab != null && !tab.gameObject.activeInHierarchy) tab = null;
+            if (choice != null || tab != null)
             {
-                var line = Describe(choice);
+                var line = tab == null ? Describe(choice)
+                         : choice == null ? Join(Describe(tab), BlankMessage(tab))
+                         : Join(Describe(tab), Describe(choice));
                 if (!string.IsNullOrEmpty(bar)) { line = Join(line, bar); _lastBar = bar; }
                 Speech.Say(line, !_queueNext);
                 _queueNext = false;
@@ -57,6 +68,7 @@ namespace SetsunaAccess
         public static string Describe(UiChoices choice)
         {
             var label = Ui.ReadAll(choice.transform);
+            if (label.Length == 0 && choice is UiCampTab) label = TabLabel((UiCampTab)choice);
             if (choice.IsLock) label = Join(label, Strings.Locked);
 
             int index, count;
@@ -91,6 +103,25 @@ namespace SetsunaAccess
                 count++;
             }
             if (index < 0) count = 0;
+        }
+
+        /// <summary>When a tab's list is empty the window shows a "blankWindow" message instead (e.g. no techs).</summary>
+        private static string BlankMessage(UiCampTab tab)
+        {
+            var win = tab.GetComponentInParent<UiCampWindow>();
+            var blank = win == null ? null : Reflect.Get<Component>(win, "blankWindow");
+            return blank != null && blank.gameObject.activeInHierarchy ? Ui.ReadAll(blank.transform) : null;
+        }
+
+        /// <summary>Icon-only tabs: the character a tab stands for, or the Snow Chronicles category.</summary>
+        private static string TabLabel(UiCampTab tab)
+        {
+            var chara = Reflect.Get<CharacterParameter>(tab, "parameter");
+            if (chara != null) return TextClean.Clean(chara.Name);
+            var story = Reflect.Get<object>(tab, "storyType");
+            if (story is UiStoryCategory && (UiStoryCategory)story != UiStoryCategory.None)
+                return TextClean.Clean(((UiStoryCategory)story).ToJapanese());
+            return "";
         }
 
         /// <summary>Description from the row's own data: an item, a skill.</summary>
