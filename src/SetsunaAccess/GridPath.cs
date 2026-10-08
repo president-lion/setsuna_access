@@ -11,14 +11,42 @@ namespace SetsunaAccess
     /// </summary>
     internal static class GridPath
     {
+        /// <summary>
+        /// A grid square on one walking level. Level tells apart floors stacked over the same square (a ledge
+        /// above a cave floor): with one cell per square, a search that reached the floor first never explored
+        /// the ledge path above it (Frost Caves room 2).
+        /// </summary>
         public struct Cell : IEquatable<Cell>
         {
-            public readonly int X, Z;
-            public Cell(int x, int z) { X = x; Z = z; }
-            public bool Equals(Cell o) { return X == o.X && Z == o.Z; }
+            public readonly int X, Z, Level;
+            public Cell(int x, int z) { X = x; Z = z; Level = 0; }
+            public Cell(int x, int z, int level) { X = x; Z = z; Level = level; }
+            public bool Equals(Cell o) { return X == o.X && Z == o.Z && Level == o.Level; }
             public override bool Equals(object o) { return o is Cell && Equals((Cell)o); }
-            public override int GetHashCode() { return X * 73856093 ^ Z * 19349663; }
-            public override string ToString() { return "(" + X + "," + Z + ")"; }
+            public override int GetHashCode() { return X * 73856093 ^ Z * 19349663 ^ Level * 83492791; }
+            public override string ToString() { return "(" + X + "," + Z + (Level != 0 ? "," + Level : "") + ")"; }
+        }
+
+        /// <summary>
+        /// Where a step from cur by (dx, dz) lands, or null if it can't be taken. The caller decides the level
+        /// (the ground found next door). Diagonal steps also need both side steps open (no corner cutting).
+        /// </summary>
+        public delegate Cell? Neighbour(Cell cur, int dx, int dz);
+
+        /// <summary>A yes/no step rule as a Neighbour that stays on the same level.</summary>
+        public static Neighbour FromStep(Func<Cell, Cell, bool> canStep)
+        {
+            return (cur, dx, dz) =>
+            {
+                var to = new Cell(cur.X + dx, cur.Z + dz, cur.Level);
+                return canStep(cur, to) ? to : (Cell?)null;
+            };
+        }
+
+        private static Cell? Next(Neighbour nb, Cell cur, int dx, int dz)
+        {
+            if (dx != 0 && dz != 0 && (nb(cur, dx, 0) == null || nb(cur, 0, dz) == null)) return null;
+            return nb(cur, dx, dz);
         }
 
         private const float Diagonal = 1.41421356f;
@@ -29,6 +57,11 @@ namespace SetsunaAccess
         /// </summary>
         public static List<Cell> Find(Cell start, Cell heuristicTarget, Func<Cell, bool> isGoal,
                                       Func<Cell, Cell, bool> canStep, int maxExpanded = 6000)
+        {
+            return Find(start, heuristicTarget, isGoal, FromStep(canStep), maxExpanded);
+        }
+
+        public static List<Cell> Find(Cell start, Cell heuristicTarget, Func<Cell, bool> isGoal, Neighbour nb, int maxExpanded = 6000)
         {
             var open = new MinHeap();
             var g = new Dictionary<Cell, float> { { start, 0f } };
@@ -49,11 +82,11 @@ namespace SetsunaAccess
                     for (var dz = -1; dz <= 1; dz++)
                     {
                         if (dx == 0 && dz == 0) continue;
-                        var next = new Cell(cur.X + dx, cur.Z + dz);
+                        var to = Next(nb, cur, dx, dz);
+                        if (to == null) continue;
+                        var next = to.Value;
                         if (closed.Contains(next)) continue;
                         var diag = dx != 0 && dz != 0;
-                        if (diag && (!canStep(cur, new Cell(cur.X + dx, cur.Z)) || !canStep(cur, new Cell(cur.X, cur.Z + dz)))) continue;
-                        if (!canStep(cur, next)) continue;
                         var cost = g[cur] + (diag ? Diagonal : 1f);
                         float old;
                         if (g.TryGetValue(next, out old) && old <= cost) continue;
@@ -71,6 +104,11 @@ namespace SetsunaAccess
         /// </summary>
         public static HashSet<Cell> Flood(Cell start, Func<Cell, Cell, bool> canStep, int maxCells, out bool complete)
         {
+            return Flood(start, FromStep(canStep), maxCells, out complete);
+        }
+
+        public static HashSet<Cell> Flood(Cell start, Neighbour nb, int maxCells, out bool complete)
+        {
             var seen = new HashSet<Cell> { start };
             var queue = new Queue<Cell>();
             queue.Enqueue(start);
@@ -83,12 +121,10 @@ namespace SetsunaAccess
                     for (var dz = -1; dz <= 1; dz++)
                     {
                         if (dx == 0 && dz == 0) continue;
-                        var next = new Cell(cur.X + dx, cur.Z + dz);
-                        if (seen.Contains(next)) continue;
-                        if (dx != 0 && dz != 0 && (!canStep(cur, new Cell(cur.X + dx, cur.Z)) || !canStep(cur, new Cell(cur.X, cur.Z + dz)))) continue;
-                        if (!canStep(cur, next)) continue;
-                        seen.Add(next);
-                        queue.Enqueue(next);
+                        var to = Next(nb, cur, dx, dz);
+                        if (to == null || seen.Contains(to.Value)) continue;
+                        seen.Add(to.Value);
+                        queue.Enqueue(to.Value);
                     }
             }
             return seen;
@@ -100,16 +136,18 @@ namespace SetsunaAccess
         /// </summary>
         public sealed class FloodJob
         {
-            private readonly Func<Cell, Cell, bool> _canStep;
+            private readonly Neighbour _nb;
             private readonly int _maxCells;
             private readonly Queue<Cell> _queue = new Queue<Cell>();
             public readonly HashSet<Cell> Seen = new HashSet<Cell>();
             public bool Done { get; private set; }
             public bool Complete { get; private set; }
 
-            public FloodJob(Cell start, Func<Cell, Cell, bool> canStep, int maxCells)
+            public FloodJob(Cell start, Func<Cell, Cell, bool> canStep, int maxCells) : this(start, FromStep(canStep), maxCells) { }
+
+            public FloodJob(Cell start, Neighbour nb, int maxCells)
             {
-                _canStep = canStep;
+                _nb = nb;
                 _maxCells = maxCells;
                 Seen.Add(start);
                 _queue.Enqueue(start);
@@ -127,12 +165,10 @@ namespace SetsunaAccess
                         for (var dz = -1; dz <= 1; dz++)
                         {
                             if (dx == 0 && dz == 0) continue;
-                            var next = new Cell(cur.X + dx, cur.Z + dz);
-                            if (Seen.Contains(next)) continue;
-                            if (dx != 0 && dz != 0 && (!_canStep(cur, new Cell(cur.X + dx, cur.Z)) || !_canStep(cur, new Cell(cur.X, cur.Z + dz)))) continue;
-                            if (!_canStep(cur, next)) continue;
-                            Seen.Add(next);
-                            _queue.Enqueue(next);
+                            var to = Next(_nb, cur, dx, dz);
+                            if (to == null || Seen.Contains(to.Value)) continue;
+                            Seen.Add(to.Value);
+                            _queue.Enqueue(to.Value);
                         }
                 }
                 return Done;
@@ -147,7 +183,7 @@ namespace SetsunaAccess
         {
             private readonly Cell _target;
             private readonly Func<Cell, bool> _isGoal;
-            private readonly Func<Cell, Cell, bool> _canStep;
+            private readonly Neighbour _nb;
             private readonly int _maxExpanded;
             private readonly Func<Cell, float> _extraCost;
             private readonly MinHeap _open = new MinHeap();
@@ -165,11 +201,15 @@ namespace SetsunaAccess
             /// <param name="extraCost">Optional added cost for entering a cell (e.g. hugging a wall), or null.</param>
             public SearchJob(Cell start, Cell target, Func<Cell, bool> isGoal, Func<Cell, Cell, bool> canStep, int maxExpanded,
                              Func<Cell, float> extraCost = null)
+                : this(start, target, isGoal, FromStep(canStep), maxExpanded, extraCost) { }
+
+            public SearchJob(Cell start, Cell target, Func<Cell, bool> isGoal, Neighbour nb, int maxExpanded,
+                             Func<Cell, float> extraCost = null)
             {
                 _target = target;
                 _extraCost = extraCost;
                 _isGoal = isGoal;
-                _canStep = canStep;
+                _nb = nb;
                 _maxExpanded = maxExpanded;
                 _g[start] = 0f;
                 _open.Push(start, H(start, target));
@@ -189,11 +229,11 @@ namespace SetsunaAccess
                         for (var dz = -1; dz <= 1; dz++)
                         {
                             if (dx == 0 && dz == 0) continue;
-                            var next = new Cell(cur.X + dx, cur.Z + dz);
+                            var to = Next(_nb, cur, dx, dz);
+                            if (to == null) continue;
+                            var next = to.Value;
                             if (_closed.Contains(next)) continue;
                             var diag = dx != 0 && dz != 0;
-                            if (diag && (!_canStep(cur, new Cell(cur.X + dx, cur.Z)) || !_canStep(cur, new Cell(cur.X, cur.Z + dz)))) continue;
-                            if (!_canStep(cur, next)) continue;
                             var cost = _g[cur] + (diag ? Diagonal : 1f) + (_extraCost == null ? 0f : _extraCost(next));
                             float old;
                             if (_g.TryGetValue(next, out old) && old <= cost) continue;

@@ -27,12 +27,48 @@ namespace SetsunaAccess
         private const float WallCheckHeight = 0.6f;
 
         private static int _groundMask = -1, _blockMask;
-        private static readonly Dictionary<Cell, float> _ground = new Dictionary<Cell, float>(); // NaN = no ground
+        // Each grid square may hold several walking surfaces (a cave floor and a ledge above it); each surface is
+        // its own cell, told apart by Level. _y is a cell's ground height, _columns lists the cells in a square,
+        // _probe caches ground probes by square and the height they were probed from (NaN = no ground).
+        private static readonly Dictionary<Cell, float> _y = new Dictionary<Cell, float>();
+        private static readonly Dictionary<long, List<Cell>> _columns = new Dictionary<long, List<Cell>>();
+        private static readonly Dictionary<Cell, float> _probe = new Dictionary<Cell, float>();
         private static readonly Dictionary<Cell, bool> _clear = new Dictionary<Cell, bool>();
         private static readonly HashSet<Cell> _blocked = new HashSet<Cell>(); // learned from getting stuck
         private static string _scene;
 
-        public static Cell ToCell(Vector3 p) { return new Cell(Mathf.FloorToInt(p.x / CellSize), Mathf.FloorToInt(p.z / CellSize)); }
+        public static Cell ToCell(Vector3 p) { return CellAt(Mathf.FloorToInt(p.x / CellSize), Mathf.FloorToInt(p.z / CellSize), p.y); }
+
+        /// <summary>
+        /// The cell for the surface at height y in square (x, z): an existing one within 1.2 m, or a new level.
+        /// Floors stacked closer than that are one surface to the grid.
+        /// </summary>
+        private static Cell CellAt(int x, int z, float y)
+        {
+            var key = ((long)x << 32) ^ (uint)z;
+            List<Cell> list;
+            if (!_columns.TryGetValue(key, out list)) { list = new List<Cell>(2); _columns[key] = list; }
+            foreach (var c in list)
+                if (Mathf.Abs(_y[c] - y) < 1.2f) return c;
+            var level = Mathf.RoundToInt(y);
+            while (list.Exists(c => c.Level == level)) level++;
+            var cell = new Cell(x, z, level);
+            _y[cell] = y;
+            list.Add(cell);
+            return cell;
+        }
+
+        private static List<Cell> Column(int x, int z)
+        {
+            List<Cell> list;
+            return _columns.TryGetValue(((long)x << 32) ^ (uint)z, out list) ? list : null;
+        }
+
+        private static float Y(Cell c, float fallback)
+        {
+            float y;
+            return _y.TryGetValue(c, out y) ? y : fallback;
+        }
 
         private static Vector3 Center(Cell c, float y) { return new Vector3((c.X + 0.5f) * CellSize, y, (c.Z + 0.5f) * CellSize); }
 
@@ -74,36 +110,6 @@ namespace SetsunaAccess
             }
         }
 
-        /// <summary>
-        /// Route from <paramref name="from"/> to within <paramref name="goalRadius"/> of <paramref name="to"/>:
-        /// world points, first = start. Null if no walkable route was found.
-        /// </summary>
-        public static List<Vector3> FindRoute(Vector3 from, Vector3 to, float goalRadius, int budget = 8000)
-        {
-            Prepare();
-            ExpireClearance();
-            var start = ToCell(from);
-            _ground[start] = from.y;
-            var target = ToCell(to);
-            var r2 = Mathf.Max(goalRadius, CellSize * 1.5f);
-            r2 *= r2;
-            System.Func<Cell, bool> isGoal = c =>
-            {
-                var d = Center(c, 0f) - new Vector3(to.x, 0f, to.z);
-                return d.sqrMagnitude <= r2;
-            };
-            var cells = GridPath.Find(start, target, isGoal, CanStep, budget);
-            if (cells == null) return null;
-            var pts = new List<Vector3>(cells.Count);
-            foreach (var c in cells)
-            {
-                float y;
-                pts.Add(Center(c, _ground.TryGetValue(c, out y) && !float.IsNaN(y) ? y : from.y));
-            }
-            pts[0] = from;
-            return pts;
-        }
-
         /// <summary>A route search that runs in slices; see Guide.</summary>
         public sealed class RouteJob
         {
@@ -129,13 +135,15 @@ namespace SetsunaAccess
             _whyR = new int[6];
             ExpireClearance();
             var start = ToCell(from);
-            _ground[start] = from.y;
+            _y[start] = from.y;
             var r2 = Mathf.Max(goalRadius, CellSize * 1.5f);
             r2 *= r2;
             var goal = new Vector3(to.x, 0f, to.z);
-            System.Func<Cell, bool> isGoal = c => (Center(c, 0f) - goal).sqrMagnitude <= r2;
-            System.Func<Cell, Cell, bool> step = mode == Mode.Lenient ? (System.Func<Cell, Cell, bool>)CanStepRoute : CanStep;
-            return new RouteJob { Search = new GridPath.SearchJob(start, ToCell(to), isGoal, step, budget, WallCost), From = from, Goal = goalRadius };
+            // Near the target and on its level (not on the floor under a ledge it stands on).
+            System.Func<Cell, bool> isGoal = c => (Center(c, 0f) - goal).sqrMagnitude <= r2 && Mathf.Abs(Y(c, to.y) - to.y) <= 3f;
+            GridPath.Neighbour step = mode == Mode.Lenient ? (GridPath.Neighbour)NbRoute : NbStrict;
+            var target = new Cell(Mathf.FloorToInt(to.x / CellSize), Mathf.FloorToInt(to.z / CellSize));
+            return new RouteJob { Search = new GridPath.SearchJob(start, target, isGoal, step, budget, WallCost), From = from, Goal = goalRadius };
         }
 
         /// <summary>Advance a route job for up to ms milliseconds; returns true when it has finished.</summary>
@@ -154,11 +162,7 @@ namespace SetsunaAccess
             var cells = job.Search.Path;
             if (cells == null) return null;
             var pts = new List<Vector3>(cells.Count);
-            foreach (var c in cells)
-            {
-                float y;
-                pts.Add(Center(c, _ground.TryGetValue(c, out y) && !float.IsNaN(y) ? y : job.From.y));
-            }
+            foreach (var c in cells) pts.Add(Center(c, Y(c, job.From.y)));
             pts[0] = job.From;
             return pts;
         }
@@ -193,15 +197,20 @@ namespace SetsunaAccess
             // A complete fill is the whole area connected to where it started: still right anywhere inside it.
             if (_reachComplete ? !InReach(player) : moved.magnitude > 12f) return Reach.Unknown;
 
-            var center = ToCell(p);
+            int cx = Mathf.FloorToInt(p.x / CellSize), cz = Mathf.FloorToInt(p.z / CellSize);
             var n = Mathf.CeilToInt(slack / CellSize);
             for (var dx = -n; dx <= n; dx++)
                 for (var dz = -n; dz <= n; dz++)
                 {
-                    var c = new Cell(center.X + dx, center.Z + dz);
-                    if (!_reach.Contains(c)) continue;
-                    var d = Center(c, 0f) - new Vector3(p.x, 0f, p.z);
-                    if (d.magnitude <= slack + CellSize * 0.75f) return Reach.Yes;
+                    var col = Column(cx + dx, cz + dz);
+                    if (col == null) continue;
+                    foreach (var c in col)
+                    {
+                        // A surface within reach of p's height (not a floor far below a ledge it's on).
+                        if (!_reach.Contains(c) || Mathf.Abs(Y(c, p.y) - p.y) > 3f) continue;
+                        var d = Center(c, 0f) - new Vector3(p.x, 0f, p.z);
+                        if (d.magnitude <= slack + CellSize * 0.75f) return Reach.Yes;
+                    }
                 }
             if (_reachComplete) return Reach.No;
             var far = p - _reachFrom; far.y = 0f;
@@ -220,11 +229,11 @@ namespace SetsunaAccess
                         || (_reachComplete ? age > 60f || !InReach(player) : age > 10f || moved.magnitude > 3f);
             if (!stale) return;
             var start = ToCell(player);
-            _ground[start] = player.y;
+            _y[start] = player.y;
             _whyLearned = _whyNoGround = _whyRise = _whyDrop = _whyBlocked = _whyWall = 0;
             _blockers.Clear();
             _thin.Clear();
-            _job = new GridPath.FloodJob(start, CanStepLenient, IsWorld ? 400000 : 60000);
+            _job = new GridPath.FloodJob(start, NbFlood, IsWorld ? 400000 : 60000);
             _jobFrom = player;
             _reachDirty = false;
         }
@@ -233,10 +242,15 @@ namespace SetsunaAccess
 
         private static bool InReach(Vector3 p)
         {
-            var c = ToCell(p);
+            int cx = Mathf.FloorToInt(p.x / CellSize), cz = Mathf.FloorToInt(p.z / CellSize);
             for (var dx = -1; dx <= 1; dx++)
                 for (var dz = -1; dz <= 1; dz++)
-                    if (_reach.Contains(new Cell(c.X + dx, c.Z + dz))) return true;
+                {
+                    var col = Column(cx + dx, cz + dz);
+                    if (col == null) continue;
+                    foreach (var c in col)
+                        if (_reach.Contains(c) && Mathf.Abs(Y(c, p.y) - p.y) < 1.5f) return true;
+                }
             return false;
         }
 
@@ -298,7 +312,7 @@ namespace SetsunaAccess
         /// <summary>The ground itself changed (a bridge lowered): drop everything probed on this map.</summary>
         public static void ForgetGeometry()
         {
-            _ground.Clear();
+            ResetSurfaces();
             _clear.Clear();
             _thin.Clear();
             _wallCost.Clear();
@@ -387,13 +401,34 @@ namespace SetsunaAccess
             if (scene != _scene)
             {
                 _scene = scene;
-                _ground.Clear();
+                _walked.Clear();
+                _walkedY.Clear();
+                ResetSurfaces();
                 _blocked.Clear();
                 _wallCost.Clear();
-                _walked.Clear();
                 _hasWalkPos = false;
                 _walkLogs = 0;
             }
+        }
+
+        /// <summary>Forget probed ground and surfaces; cells walked this visit are kept (with their heights).</summary>
+        private static void ResetSurfaces()
+        {
+            _y.Clear();
+            _columns.Clear();
+            _probe.Clear();
+            _clear.Clear();
+            _thin.Clear();
+            foreach (var kv in _walkedY) Register(kv.Key, kv.Value);
+        }
+
+        private static void Register(Cell c, float y)
+        {
+            _y[c] = y;
+            var key = ((long)c.X << 32) ^ (uint)c.Z;
+            List<Cell> list;
+            if (!_columns.TryGetValue(key, out list)) { list = new List<Cell>(2); _columns[key] = list; }
+            if (!list.Contains(c)) list.Add(c);
         }
 
         // ---- where the player has actually walked ------------------------------------------
@@ -401,6 +436,7 @@ namespace SetsunaAccess
         // Cells the leader has stood in this visit. A step between two of them is walkable whatever the
         // probes say: in Serendale the player ran down a street both the planner and the flood called walled.
         private static readonly HashSet<Cell> _walked = new HashSet<Cell>();
+        private static readonly Dictionary<Cell, float> _walkedY = new Dictionary<Cell, float>();
         private static Vector3 _walkPos;
         private static bool _hasWalkPos;
         private static int _walkLogs;
@@ -426,7 +462,7 @@ namespace SetsunaAccess
                 var c = ToCell(q);
                 if (c.Equals(prev)) continue;
                 float prevY;
-                var hasPrev = _ground.TryGetValue(prev, out prevY) && !float.IsNaN(prevY);
+                var hasPrev = _y.TryGetValue(prev, out prevY);
                 // The game lets the party clip into wall meshes (it moves by transform), so a step through an
                 // upright face is the body going into a wall, not a way through: don't learn it.
                 if (hasPrev && UprightWall(prev, prevY, c, q.y, false))
@@ -448,7 +484,8 @@ namespace SetsunaAccess
 
         private static void Walk(Cell c, float y)
         {
-            _ground[c] = y;
+            _walkedY[c] = y;
+            _probe[new Cell(c.X, c.Z, Mathf.FloorToInt(y))] = y;
             _blocked.Remove(c);
             if (_walked.Add(c) && _reach != null && !_reach.Contains(c)) _reachDirty = true;
         }
@@ -482,22 +519,60 @@ namespace SetsunaAccess
         }
 
         /// <summary>
+        /// Where a step lands: 0 = on cell "to", 2 = no ground, 3 = too steep a rise, 4 = too far a drop
+        /// (1 = the start cell has no known height). The ground is probed from just above the step's own
+        /// height, so a ledge over a floor and the floor under it are found from their own levels.
+        /// </summary>
+        private static int Land(Cell from, int dx, int dz, out Cell to, out float fromY, out float toY)
+        {
+            to = default(Cell);
+            toY = 0f;
+            if (!_y.TryGetValue(from, out fromY)) return 1;
+            int x = from.X + dx, z = from.Z + dz;
+            toY = Ground(x, z, fromY);
+            if (float.IsNaN(toY)) return 2;
+            if (toY > fromY + MaxRise) return 3;
+            if (toY < fromY - MaxDrop) return 4;
+            to = CellAt(x, z, toY);
+            return 0;
+        }
+
+        /// <summary>A walked cell next door at a reachable height, when the probes found nothing walkable.</summary>
+        private static Cell? WalkedNext(Cell from, int dx, int dz, float fromY)
+        {
+            if (!_walked.Contains(from)) return null;
+            var col = Column(from.X + dx, from.Z + dz);
+            if (col == null) return null;
+            foreach (var c in col)
+            {
+                if (!_walked.Contains(c)) continue;
+                var y = Y(c, fromY);
+                if (y <= fromY + MaxRise + 0.2f && y >= fromY - MaxDrop) return c;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Lenient stepping for the scanner's reachability filter: ground, walls and upright ground-layer faces,
         /// but not the strict rock-face rules, so the filter only hides things there's truly no way to.
         /// </summary>
-        private static bool CanStepLenient(Cell from, Cell to)
+        private static Cell? NbFlood(Cell from, int dx, int dz)
         {
-            if (Walked(from, to)) return true;
-            if (_blocked.Contains(to)) { _whyLearned++; return false; }
-            float fromY;
-            if (!_ground.TryGetValue(from, out fromY) || float.IsNaN(fromY)) return false;
-            var toY = Ground(to, fromY);
-            if (float.IsNaN(toY)) { _whyNoGround++; return false; }
-            if (toY > fromY + MaxRise) { _whyRise++; return false; }
-            if (toY < fromY - MaxDrop) { _whyDrop++; return false; }
-            if (!ThinClear(to, toY)) { _whyBlocked++; return false; }
-            if (UprightWall(from, fromY, to, toY, true)) { _whyWall++; return false; }
-            return true;
+            Cell to;
+            float fromY, toY;
+            var r = Land(from, dx, dz, out to, out fromY, out toY);
+            if (r != 0)
+            {
+                var w = WalkedNext(from, dx, dz, fromY);
+                if (w != null) return w;
+                if (r == 2) _whyNoGround++; else if (r == 3) _whyRise++; else if (r == 4) _whyDrop++;
+                return null;
+            }
+            if (Walked(from, to)) return to;
+            if (_blocked.Contains(to)) { _whyLearned++; return null; }
+            if (!ThinClear(to, toY)) { _whyBlocked++; return null; }
+            if (UprightWall(from, fromY, to, toY, true)) { _whyWall++; return null; }
+            return to;
         }
 
         /// <summary>
@@ -572,22 +647,26 @@ namespace SetsunaAccess
                    + ", body " + _whyR[4] + ", rock face " + _whyR[5];
         }
 
-        private static bool CanStep(Cell from, Cell to)
+        private static Cell? NbStrict(Cell from, int dx, int dz)
         {
-            if (Walked(from, to)) return true;
-            if (_blocked.Contains(to)) { _whyR[0]++; return false; }
-            float fromY;
-            if (!_ground.TryGetValue(from, out fromY) || float.IsNaN(fromY)) return false;
-            var toY = Ground(to, fromY);
-            if (float.IsNaN(toY)) { _whyR[1]++; return false; }
-            if (toY > fromY + MaxRise) { _whyR[2]++; return false; }
-            if (toY < fromY - MaxDrop) { _whyR[3]++; return false; }
-            if (!Clear(to, toY)) { _whyR[4]++; return false; }
+            Cell to;
+            float fromY, toY;
+            var r = Land(from, dx, dz, out to, out fromY, out toY);
+            if (r != 0)
+            {
+                var w = WalkedNext(from, dx, dz, fromY);
+                if (w != null) return w;
+                if (r >= 2) _whyR[r - 1]++;
+                return null;
+            }
+            if (Walked(from, to)) return to;
+            if (_blocked.Contains(to)) { _whyR[0]++; return null; }
+            if (!Clear(to, toY)) { _whyR[4]++; return null; }
             // Rock faces and cliffs are part of the ground mesh (HitGround), and a downward ray that starts
             // inside one misses it. A thin line at knee height between the two cells catches the face, while
             // branches, arches and overhangs above it don't count (a full-height check hid real paths).
-            if (Physics.Linecast(Center(from, fromY + WallCheckHeight), Center(to, toY + WallCheckHeight), _groundMask)) { _whyR[5]++; return false; }
-            return true;
+            if (Physics.Linecast(Center(from, fromY + WallCheckHeight), Center(to, toY + WallCheckHeight), _groundMask)) { _whyR[5]++; return null; }
+            return to;
         }
 
         /// <summary>
@@ -595,30 +674,38 @@ namespace SetsunaAccess
         /// and people). The last fallback when the body-width plan finds the area closed off (stairs and town
         /// steps whose risers the rock-face rays mistake for walls). WallCost keeps it to the middle of paths.
         /// </summary>
-        private static bool CanStepRoute(Cell from, Cell to)
+        private static Cell? NbRoute(Cell from, int dx, int dz)
         {
-            if (Walked(from, to)) return true;
-            if (_blocked.Contains(to)) { _whyR[0]++; return false; }
-            float fromY;
-            if (!_ground.TryGetValue(from, out fromY) || float.IsNaN(fromY)) return false;
-            var toY = Ground(to, fromY);
-            if (float.IsNaN(toY)) { _whyR[1]++; return false; }
-            if (toY > fromY + MaxRise) { _whyR[2]++; return false; }
-            if (toY < fromY - MaxDrop) { _whyR[3]++; return false; }
-            if (!ThinClear(to, toY)) { _whyR[4]++; return false; }
-            if (UprightWall(from, fromY, to, toY, false)) { _whyR[5]++; return false; }
-            return true;
+            Cell to;
+            float fromY, toY;
+            var r = Land(from, dx, dz, out to, out fromY, out toY);
+            if (r != 0)
+            {
+                var w = WalkedNext(from, dx, dz, fromY);
+                if (w != null) return w;
+                if (r >= 2) _whyR[r - 1]++;
+                return null;
+            }
+            if (Walked(from, to)) return to;
+            if (_blocked.Contains(to)) { _whyR[0]++; return null; }
+            if (!ThinClear(to, toY)) { _whyR[4]++; return null; }
+            if (UprightWall(from, fromY, to, toY, false)) { _whyR[5]++; return null; }
+            return to;
         }
 
-        /// <summary>Ground height in a cell, probing from just above the neighbour's height (bridges, stairs).</summary>
-        private static float Ground(Cell c, float refY)
+        /// <summary>
+        /// Ground height in square (x, z), probing down from just above refY (the neighbour's height), so a
+        /// bridge, stairs or a ledge is found from its own level. Cached per square and 1 m of refY.
+        /// </summary>
+        private static float Ground(int x, int z, float refY)
         {
+            var key = new Cell(x, z, Mathf.FloorToInt(refY));
             float y;
-            if (_ground.TryGetValue(c, out y) && (float.IsNaN(y) || Mathf.Abs(y - refY) < 2f)) return y;
+            if (_probe.TryGetValue(key, out y)) return y;
             RaycastHit hit;
-            var origin = Center(c, refY + 1.5f);
+            var origin = new Vector3((x + 0.5f) * CellSize, refY + 1.5f, (z + 0.5f) * CellSize);
             y = Physics.Raycast(origin, Vector3.down, out hit, 1.5f + MaxDrop + 0.5f, _groundMask) ? hit.point.y : float.NaN;
-            _ground[c] = y;
+            _probe[key] = y;
             return y;
         }
 
@@ -661,7 +748,7 @@ namespace SetsunaAccess
             float cost;
             if (_wallCost.TryGetValue(c, out cost)) return cost;
             float y;
-            if (!_ground.TryGetValue(c, out y) || float.IsNaN(y)) return 0f;
+            if (!_y.TryGetValue(c, out y)) return 0f;
             var near = Radius() + 0.45f;
             var p = Center(c, y);
             if (_mode == Mode.Lenient)
@@ -715,10 +802,11 @@ namespace SetsunaAccess
             var y = a.y;
             for (var t = CellSize; t < dist; t += CellSize)
             {
-                var c = ToCell(a + dir * t);
-                if (_blocked.Contains(c)) return false;
-                var gy = Ground(c, y);
+                var q = a + dir * t;
+                int x = Mathf.FloorToInt(q.x / CellSize), z = Mathf.FloorToInt(q.z / CellSize);
+                var gy = Ground(x, z, y);
                 if (float.IsNaN(gy) || gy > y + MaxRise || gy < y - MaxDrop) return false;
+                if (_blocked.Contains(CellAt(x, z, gy))) return false;
                 y = gy;
             }
             return true;

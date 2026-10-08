@@ -332,3 +332,13 @@ off any ledge (PlayerControl.WalkUpdate moves on with no ground below; UpdateHei
 but the mod limited drops to 1 m and probed only 2.5 m down, so every drop read as a wall and everything past
 one looked unreachable. The user took this for areas "unlocking" as monsters died. MaxDrop is now 6 m (one-way
 steps in the directed flood and A*), and the ground probe reaches 8 m down.
+
+Stacked levels (2026-10-08): the real Frost Caves problem. Room 2's upper walkway runs directly above parts of the
+lower floor. The grid had one cell per 0.5 m square, so once the flood or A* reached a square at floor level,
+the walkway square above it counted as visited and the walkway path was never explored (offline simulation:
+the south-floor flood reached the ramp top but not the walkway beyond it, though the straight walkway line has
+no obstacle). GridPath.Cell now has a Level; searches ask a Neighbour delegate where a step lands (the old
+yes/no rule is wrapped by FromStep, so existing tests are unchanged). Nav keeps, per square, a list of surfaces
+(CellAt: same surface if within 1.2 m), ground probes cached per square and 1 m of probe height, and route
+goals / reachability lookups match the target's height (within 3 m). Tests: FloodFindsTheWalkwayOverTheFloor,
+SearchCrossesOverTheWallOnTheWalkway.

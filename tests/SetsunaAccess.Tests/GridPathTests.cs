@@ -163,4 +163,45 @@ public class GridPathTests
         Assert.NotNull(job.Path);
         Assert.Contains(job.Path, c => c.Z != 1); // leaves the costly middle row
     }
+
+    /// <summary>
+    /// Frost Caves room 2 in miniature. Row z = 0 has a floor (level 0) cut by a wall at x = 5, and a walkway
+    /// (level 1) running over the very same squares. From the start you can go up to the walkway via z = 1 at
+    /// x = 0, walk it to x = 10, and come down via z = 1 at x = 10 to the goal on the floor. The floor squares
+    /// x 0-4 are reached first on level 0; with one cell per square the walkway above them was never explored.
+    /// </summary>
+    private static GridPath.Neighbour Stacked()
+    {
+        return (cur, dx, dz) =>
+        {
+            int x = cur.X + dx, z = cur.Z + dz;
+            if (x < 0 || x > 10 || z < 0 || z > 1) return null;
+            if (dx != 0 && dz != 0) return null;
+            if (z == 1) return (x == 0 || x == 10) && dx == 0 ? new Cell(x, 1, cur.Level == 0 ? 1 : 0) : (Cell?)null; // the ramps
+            if (cur.Z == 1) return new Cell(x, 0, cur.Level);                                                      // off a ramp
+            if (cur.Level == 0 && x == 5) return null;                                                             // floor wall
+            return new Cell(x, 0, cur.Level);
+        };
+    }
+
+    [Fact]
+    public void FloodFindsTheWalkwayOverTheFloor()
+    {
+        bool complete;
+        var seen = GridPath.Flood(new Cell(0, 0, 0), Stacked(), 1000, out complete);
+        Assert.True(complete);
+        Assert.Contains(new Cell(3, 0, 1), seen);  // the walkway above floor squares already reached
+        Assert.Contains(new Cell(10, 0, 0), seen); // the floor beyond the wall, via the walkway
+    }
+
+    [Fact]
+    public void SearchCrossesOverTheWallOnTheWalkway()
+    {
+        var goal = new Cell(10, 0, 0);
+        var job = new GridPath.SearchJob(new Cell(0, 0, 0), goal, c => c.Equals(goal), Stacked(), 1000);
+        while (!job.Step(20)) { }
+        Assert.NotNull(job.Path);
+        Assert.Contains(new Cell(5, 0, 1), job.Path); // over the wall, on level 1
+        Assert.DoesNotContain(new Cell(5, 0, 0), job.Path);
+    }
 }
