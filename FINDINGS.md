@@ -265,3 +265,8 @@ states use UiShopConfirmation (already read). Circle on a row opens the material
 focused material (OnPressSquare -> Sell confirmation); Triangle on a row obtains (OnPressContent). Progress per
 material is Common.GetSellCount(currentShopId, id) against ExchangeItemData.needMaterialNumList. Hooks:
 OnSelectContent (row details), SetState (list header and keys), SetItemData (material focus).
+
+House doors (Purikka, 2026-10-08): doors are solid ground-layer colliders (col_mg_door_common_01_01) and the
+exit trigger (mjarea_*) sits just behind them, so no walkable cell was within the loose goal (1.7 m) of the
+exit point and every plan failed. Exit fallbacks now aim for within 3 m, the scanner counts exits reachable
+within 3 m, and the walk's last 3.5 m to an exit go straight in without wall sliding.

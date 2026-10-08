@@ -60,14 +60,19 @@ namespace SetsunaAccess
         // 0: the full body. 1: exits past the walkable edge, a looser goal. 2: a doorway too narrow for the
         // grid to fit the full body through, a slim body. 3: the way the scanner's flood found (stairs, steps
         // and ramps the body-width rays read as walls).
+        // The fallbacks only need to get near: the walk covers the rest in a straight line. Exits (tiny arrive
+        // radius) sit behind house doors, which are solid ground-layer colliders you walk into, so every cell
+        // within 1.7 m of the exit point was on the far side of the door; 3 m reaches the doorstep.
+        private static float Loose { get { return _goal < 0.5f ? _goal + 3f : _goal + 1.5f; } }
+
         private static Nav.RouteJob StartAttempt(Vector3 from, int attempt)
         {
             switch (attempt)
             {
                 case 0: return Nav.StartRoute(from, _target.position, _goal);
-                case 1: return Nav.StartRoute(from, _target.position, _goal + 1.5f, 3000);
-                case 2: return Nav.StartRoute(from, _target.position, _goal + 1.5f, 8000, Nav.Mode.Slim);
-                default: return Nav.StartRoute(from, _target.position, _goal + 1.5f, 12000, Nav.Mode.Lenient);
+                case 1: return Nav.StartRoute(from, _target.position, Loose, 3000);
+                case 2: return Nav.StartRoute(from, _target.position, Loose, 8000, Nav.Mode.Slim);
+                default: return Nav.StartRoute(from, _target.position, Loose, 12000, Nav.Mode.Lenient);
             }
         }
 

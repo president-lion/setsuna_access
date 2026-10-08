@@ -152,8 +152,12 @@ namespace SetsunaAccess
                 _lastPos = leader.position;
                 _nextCheck = Time.time + 0.8f;
             }
+            // Last few metres to an exit: straight in. Doors are solid and the exit is just behind one, so
+            // sliding along the "wall" would steer off the door.
+            var intoExit = _arrive <= 0.25f && d.magnitude < 3.5f;
             if (Time.time < _backUntil) dir = -_backDir;                       // backing off a wall
             else if (Time.time < _detourUntil) dir = Quaternion.Euler(0f, _detourAngle, 0f) * dir;
+            else if (intoExit) dir = d.normalized;
             else dir = Nav.Slide(leader.position, dir);                         // slide along walls
 
             var cam = MainCameraControl.cameraTransform;

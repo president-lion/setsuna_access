@@ -144,6 +144,7 @@ namespace SetsunaAccess
                 case Kind.Chest: return 1.8f;
                 case Kind.SavePoint: return 1.8f;
                 case Kind.Sparkle: return 1.2f;
+                case Kind.Exit: return 3f; // house exits sit behind solid doors
                 default: return 2.5f;
             }
         }
