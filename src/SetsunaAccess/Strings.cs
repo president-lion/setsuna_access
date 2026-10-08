@@ -27,7 +27,17 @@ namespace SetsunaAccess
         // Field scanner.
         public const string CatAll = "Everything", CatPeople = "People", CatChests = "Chests", CatExits = "Exits",
                             CatSavePoints = "Save points", CatSparkles = "Sparkles";
-        public const string CatSwitches = "Switches";
+        public const string CatSwitches = "Switches and doors";
+        public const string CatEnemies = "Enemies";
+        public const string Monster = "Monster";
+        public const string Airship = "Airship";
+        public const string Sign = "Sign";
+        public static string SignNamed(string name) { return name + ", sign"; }
+        public const string Door = "Door";
+        public const string DoorOpen = "Door, open";
+        public const string DoorLocked = "Door, locked, needs a key";
+        public const string DoorLockedHaveKey = "Door, locked, you have the key";
+        public const string DoorSwitch = "Door, opened by a switch";
         public const string SwitchName = "Switch";
         public const string SwitchUsed = "Switch, used";
         public const string SwitchInactive = "Switch, not working yet";

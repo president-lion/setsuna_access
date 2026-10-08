@@ -12,7 +12,8 @@ namespace SetsunaAccess
     internal static class Field
     {
         // Spot and Enemy are only ever selected by the objective finder (N), never listed by category.
-        private enum Kind { Person, Chest, Exit, SavePoint, Sparkle, Switch, Spot, Enemy }
+        // Category order follows this enum up to Enemy; Spot is only for story objectives.
+        private enum Kind { Person, Chest, Exit, SavePoint, Sparkle, Switch, Enemy, Spot }
 
         private sealed class Target
         {
@@ -24,7 +25,7 @@ namespace SetsunaAccess
 
         // Category 0 = everything, then one per Kind.
         private static readonly string[] Categories =
-            { Strings.CatAll, Strings.CatPeople, Strings.CatChests, Strings.CatExits, Strings.CatSavePoints, Strings.CatSparkles, Strings.CatSwitches };
+            { Strings.CatAll, Strings.CatPeople, Strings.CatChests, Strings.CatExits, Strings.CatSavePoints, Strings.CatSparkles, Strings.CatSwitches, Strings.CatEnemies };
 
         private const float MaxRange = 1000f;
 
@@ -361,6 +362,9 @@ namespace SetsunaAccess
                 foreach (var n in Object.FindObjectsOfType<NPCControl>())
                 {
                     var nm = n.npcChara == null ? "" : TextClean.Clean(n.npcChara.name);
+                    // Signboards are "NPCs" running the CommonSign script.
+                    var sign = n.param != null && n.param.script == "CommonSign";
+                    if (sign) nm = nm.Length == 0 ? Strings.Sign : Strings.SignNamed(nm);
                     if (nm.Length == 0) nm = Strings.Person;
                     var shop = MapData.ShopName(n.param.script);
                     Add(list, Kind.Person, n.transform, shop.Length > 0 ? Strings.WithShop(nm, shop) : nm, player);
@@ -380,9 +384,24 @@ namespace SetsunaAccess
                         Add(list, Kind.Sparkle, p.transform, Strings.Sparkle, player);
 
             // Switches and levers (GimmickSwitch): they lower bridges and open ways (Serendale's east side).
+            // Doors (DoorControl) and the airship go with them.
             if (want == null || want == Kind.Switch)
+            {
                 foreach (var g in Object.FindObjectsOfType<GimmickSwitch>())
                     if (g.gameObject.activeInHierarchy) Add(list, Kind.Switch, g.transform, SwitchName(g), player);
+                foreach (var d in Object.FindObjectsOfType<DoorControl>())
+                    if (d.gameObject.activeInHierarchy) Add(list, Kind.Switch, d.transform, DoorName(d), player);
+                foreach (var a in Object.FindObjectsOfType<AirShipControl>())
+                    if (a.gameObject.activeInHierarchy) Add(list, Kind.Switch, a.transform, Strings.Airship, player);
+            }
+            // Monsters roaming the map (touching one starts a battle).
+            if (want == null || want == Kind.Enemy)
+                foreach (var e in Object.FindObjectsOfType<EnemyControl>())
+                    if (e.gameObject.activeInHierarchy)
+                    {
+                        var en = Narration.Name(e);
+                        Add(list, Kind.Enemy, e.transform, en.Length > 0 ? en : Strings.Monster, player);
+                    }
 
             // Drop what can't be walked to (one flood fill over the same grid the routes use). Generous
             // reach: shopkeepers talk across counters, exits sit past the walkable edge. Anything beyond the
@@ -406,6 +425,20 @@ namespace SetsunaAccess
         {
             if (!Reflect.Get<bool>(g, "isPower")) return Strings.SwitchInactive;
             return Reflect.Get<bool>(g, "isOn") ? Strings.SwitchUsed : Strings.SwitchName;
+        }
+
+        /// <summary>A door and how it opens: open, locked (with or without the key), or worked by a switch.</summary>
+        private static string DoorName(DoorControl d)
+        {
+            if (Reflect.Get<bool>(d, "isOn")) return Strings.DoorOpen;
+            switch (d.gimmickParam.trigger)
+            {
+                case GIMMICK_TRIGGER.WITH_KEY:
+                    var key = Reflect.Int(d, "keyItemId");
+                    return key > 0 && ItemManager.GetHaveItemNum(key) > 0 ? Strings.DoorLockedHaveKey : Strings.DoorLocked;
+                case GIMMICK_TRIGGER.SWITCH: return Strings.DoorSwitch;
+                default: return Strings.Door;
+            }
         }
 
         // Gimmicks (bridges, doors) change the walkable ground when they move: forget the probed grid then.

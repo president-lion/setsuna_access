@@ -296,3 +296,10 @@ not working yet from GimmickSwitch isOn / isPower), forgets the probed grid when
 (isOn, isGimmickPlaying, active), and N, when the objective is cut off, first looks for another entrance
 (MapData.Jumps arrivals/exits) and then suggests the nearest unused switch. Walked-cell learning skips steps
 whose knee line meets an upright face: the game moves the party by transform and lets it clip into walls.
+
+Scanner coverage (2026-10-08): the placement file holds event colliders, map jumps, gimmicks, save points,
+shining points, item boxes, enemies, NPCs, BGM colliders and gimmick cameras. The scanner now covers all the
+player-facing ones: people (signboards are NPCs running the CommonSign script, labelled "Sign"), chests,
+exits, save points, sparkles, "Switches and doors" (GimmickSwitch, DoorControl with open / locked by key item
+gimmickParam.argument1 / opened by switch, AirShipControl), and Enemies (EnemyControl on the field). Event
+colliders stay out of the list (N finds the story one); BGM colliders and cameras are not things to walk to.
