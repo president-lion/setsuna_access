@@ -17,10 +17,12 @@ namespace SetsunaAccess
     internal static class Nav
     {
         public const float CellSize = 0.5f;
-        // Per half-metre cell. The game only drops you when the ground falls over 0.5 m within one frame
-        // of movement (BaseCharacter.UpdateHeight), and pushes you up slopes physically, so hills are fine;
-        // only real ledges and cliffs exceed these.
-        private const float MaxRise = 0.8f, MaxDrop = 1.0f;
+        // Per half-metre cell. Climbing is limited (the game pushes you up slopes and small steps), but walking
+        // off a ledge is always allowed: PlayerControl.WalkUpdate keeps moving when there's no ground below and
+        // BaseCharacter.UpdateHeight then lets the party fall. Frost Caves room 2 is laid out around 3 m drops
+        // (ramp up, drop to the far floor, climb to the objective), which a 1 m limit called walls. Drops are
+        // one-way steps, which the directed flood and A* handle.
+        private const float MaxRise = 0.8f, MaxDrop = 6f;
         // Height of the thin wall check between cells: ground-layer geometry crossing it is a rock face.
         private const float WallCheckHeight = 0.6f;
 
@@ -615,7 +617,7 @@ namespace SetsunaAccess
             if (_ground.TryGetValue(c, out y) && (float.IsNaN(y) || Mathf.Abs(y - refY) < 2f)) return y;
             RaycastHit hit;
             var origin = Center(c, refY + 1.5f);
-            y = Physics.Raycast(origin, Vector3.down, out hit, 1.5f + 2.5f, _groundMask) ? hit.point.y : float.NaN;
+            y = Physics.Raycast(origin, Vector3.down, out hit, 1.5f + MaxDrop + 0.5f, _groundMask) ? hit.point.y : float.NaN;
             _ground[c] = y;
             return y;
         }

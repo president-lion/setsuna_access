@@ -325,3 +325,10 @@ closed area (~4000 cells), then the slim and lenient fallbacks routed through Hi
 and walk-to bumped along them. On the world map the fallbacks are now off (full + loose goal only), and walk-to
 stops with "No way to walk to X from here" instead of trying straight. Room 2's upper ledge drops to the floor
 but can't be climbed from it (offline: flood from the ledge reaches the floor, not the reverse).
+
+Ledge drops (2026-10-08): Frost Caves room 2 is a ramp up from the south floor to an upper area, a ~3 m drop
+from there to the north floor, and a climb from the north floor to the objective ledge. The game lets you walk
+off any ledge (PlayerControl.WalkUpdate moves on with no ground below; UpdateHeight then makes the party fall),
+but the mod limited drops to 1 m and probed only 2.5 m down, so every drop read as a wall and everything past
+one looked unreachable. The user took this for areas "unlocking" as monsters died. MaxDrop is now 6 m (one-way
+steps in the directed flood and A*), and the ground probe reaches 8 m down.
