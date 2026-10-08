@@ -21,6 +21,7 @@ namespace SetsunaAccess
 
         public override void OnUpdate()
         {
+            Perf.Begin();
             try { Hotkeys(); }
             catch (Exception ex) { Log.Once("Hotkeys", ex); }
             try { Results.Tick(); }
@@ -31,16 +32,20 @@ namespace SetsunaAccess
             catch (Exception ex) { Log.Once("Nav", ex); }
             try { Field.Tick(); }
             catch (Exception ex) { Log.Once("Field", ex); }
+            Perf.End();
         }
 
         public override void OnLateUpdate()
         {
+            Perf.Begin();
             try { Focus.LateTick(); }
             catch (Exception ex) { Log.Once("Focus", ex); }
             try { Narration.LateTick(); }
             catch (Exception ex) { Log.Once("Narration", ex); }
             try { Battle.LateTick(); }
             catch (Exception ex) { Log.Once("Battle", ex); }
+            Perf.End();
+            Perf.Frame();
         }
 
         // The game binds letters, digits, Space, Return, Delete and Left Ctrl (Left Ctrl only matters

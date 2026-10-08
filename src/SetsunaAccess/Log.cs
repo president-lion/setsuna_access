@@ -23,7 +23,7 @@ namespace SetsunaAccess
             Dir = Path.Combine(MelonUtils.UserDataDirectory, "SetsunaAccess");
             Directory.CreateDirectory(Dir);
             // Each session starts fresh; the previous one is kept as .old for comparison.
-            foreach (var name in new[] { "speech.log", "unhandled.log", "nav.log" })
+            foreach (var name in new[] { "speech.log", "unhandled.log", "nav.log", "perf.log" })
             {
                 var p = Path.Combine(Dir, name);
                 try { if (File.Exists(p)) File.Copy(p, p + ".old", true); File.WriteAllText(p, ""); } catch { }
