@@ -25,7 +25,9 @@ namespace SetsunaAccess
             _workFrames++;
         }
 
-        public static void Begin() { _sw.Reset(); _sw.Start(); _markMs = 0; }
+        public static void Begin() { CpuProbe.MarkMain(); _sw.Reset(); _sw.Start(); _markMs = 0; }
+
+        private static int _gcLast = -1;
 
         private static double _markMs, _slowMs;
         private static string _slowName;
@@ -67,6 +69,12 @@ namespace SetsunaAccess
                                    + (_slowMs >= 10 ? ", slowest " + _slowName + " " + _slowMs.ToString("0") + " ms" : ""));
             _slowMs = 0;
             _slowName = null;
+            var gc = System.GC.CollectionCount(0);
+            var cpu = CpuProbe.Sample();
+            if (cpu != null)
+                Log.Append("perf.log", cpu + "; garbage collections " + (_gcLast < 0 ? 0 : gc - _gcLast)
+                                       + ", managed heap " + (System.GC.GetTotalMemory(false) >> 20) + " MB");
+            _gcLast = gc;
             _workMs = _workMax = _sleepMs = 0;
             _workFrames = 0;
             _frames = 0;

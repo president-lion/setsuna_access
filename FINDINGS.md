@@ -309,3 +309,13 @@ resultWindow set; up/down via sub_contentController, left/right call UiCampConte
 = On, default; GetButtonEnable), which calls OnSublimationSelect. Cancel (Cross) applies every row left On
 (HaveItemInfo.Sublimate). The mod speaks the row's setting, On/Off on toggle, and a key hint when
 OpenChackSublimation(true) runs.
+
+Frost Caves (2026-10-08): the objective EC_121240_0 (-46.5, 3.5, 53) is on room 2's upper ledge (y 3), which
+doesn't connect to the floor you arrive on from room 1 (offline flood with tools/geo agrees). Room 2's upper
+arrival mjpoint_02 (-47.5, 3, 70) is entered from MA_0011_03's mjarea_01; MA_0011_03 has its own world-map
+entrance (mjpoint_11 -> its mjpoint_02). MapData.PathTo now has a variant that only leaves the current floor by
+exits the player can reach and only enters a split floor at a given arrival point; Objective remembers that
+arrival point so N on the world map and in room 3 keeps routing to the right entrance, and SelectRoute avoids
+exits the player can't reach. Failed route chains now retry every 12 s instead of 5 s.
+CPU: perf.log gets a "cpu" line every 10 s (process CPU, busiest threads named by the DLL their start address
+is in, via Toolhelp32 + GetThreadTimes + NtQueryInformationThread class 9) plus garbage-collection counts.

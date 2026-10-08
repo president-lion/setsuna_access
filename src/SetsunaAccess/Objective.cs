@@ -91,9 +91,15 @@ namespace SetsunaAccess
         /// <summary>Select the target here, or, if it's in a part of this map you can't walk to, the way round.</summary>
         private static bool Here(Transform t, string name, bool walkInto)
         {
-            if (!OtherPart(t, name)) Field.SetObjective(t, name, walkInto);
+            if (OtherPart(t, name)) return true;
+            _arriveFloor = _arrivePoint = null; // reached the right part
+            Field.SetObjective(t, name, walkInto);
             return true;
         }
+
+        // Set when the objective is in a part of a split map entered at one particular arrival point;
+        // TryElsewhere then routes into that floor only through that entrance.
+        private static string _arriveFloor, _arrivePoint;
 
         /// <summary>
         /// Some maps are split into parts you enter separately (Serendale has two entrances from the world map
@@ -119,18 +125,20 @@ namespace SetsunaAccess
             }
             if (arrival == null) { Log.Append("nav.log", "objective: target unreachable here and no other arrival point"); return Switch(player, name); }
 
-            foreach (var neighbour in MapData.Exits(floor.id))
-                foreach (var j in MapData.Jumps(neighbour, false))
-                {
-                    if (!string.Equals(j.To, floor.id, StringComparison.OrdinalIgnoreCase) || j.ToPoint != arrival.Id) continue;
-                    var path = MapData.PathTo(floor.id, f => string.Equals(f, neighbour, StringComparison.OrdinalIgnoreCase));
-                    if (path == null || path.Count < 2) continue;
-                    Log.Append("nav.log", "objective: " + t.name + " is in another part of " + floor.id + "; arrival " + arrival.Id + " "
-                                          + NavLog.P(arrival.Pos) + " via " + neighbour + " exit " + j.Id);
-                    Field.PreferEntrance(floor.id, arrival.Id);
-                    Field.SelectRoute(path, Strings.ObjectiveOtherPart(name, MapData.FloorName(floor.id), MapData.FloorName(neighbour)));
-                    return true;
-                }
+            // Out through an exit we can walk to, round to a floor whose exit enters this one at that arrival point.
+            var here = floor.id;
+            var path = MapData.PathTo(here, f => string.Equals(f, here, StringComparison.OrdinalIgnoreCase),
+                                      j => Nav.CanReach(player.position, j.Pos, 3f) != Nav.Reach.No, here, arrival.Id);
+            if (path != null && path.Count >= 3)
+            {
+                Log.Append("nav.log", "objective: " + t.name + " is in another part of " + here + "; arrival " + arrival.Id + " "
+                                      + NavLog.P(arrival.Pos) + "; route " + string.Join(" > ", path.ToArray()));
+                _arriveFloor = here;
+                _arrivePoint = arrival.Id;
+                Field.PreferEntrance(here, arrival.Id);
+                Field.SelectRoute(path, Strings.ObjectiveOtherPart(name, MapData.FloorName(here), MapData.FloorName(path[path.Count - 2])));
+                return true;
+            }
             Log.Append("nav.log", "objective: target unreachable here; arrival " + arrival.Id + " has no known entrance");
             return Switch(player, name);
         }
@@ -193,7 +201,10 @@ namespace SetsunaAccess
                 case FloorTrigger: holds = f => string.Equals(f, s.Terms, StringComparison.OrdinalIgnoreCase); break;
                 default: holds = f => MapData.HasEnemyGroup(f, s.Terms); break;
             }
-            var path = MapData.PathTo(floor.id, holds);
+            var player = Leader();
+            Func<MapData.Jump, bool> reachable = j => player == null || Nav.CanReach(player.position, j.Pos, 3f) != Nav.Reach.No;
+            var path = MapData.PathTo(floor.id, holds, reachable, _arriveFloor, _arrivePoint)
+                       ?? MapData.PathTo(floor.id, holds);
             Log.Append("nav.log", "objective elsewhere: " + s.Trigger + "/" + s.Terms + " from " + floor.id + " -> "
                                   + (path == null ? "no map path" : string.Join(" > ", path.ToArray())));
             if (path == null || path.Count < 2) return false;

@@ -170,6 +170,50 @@ namespace SetsunaAccess
             return null;
         }
 
+        /// <summary>
+        /// Breadth-first over exits like PathTo, with two limits: on the first floor only exits firstHop accepts
+        /// (the ones the player can walk to), and, when arriveFloor is set, that floor may only be entered at
+        /// arrivalPoint (split maps: the Frost Caves' upper ledge is entered from the far room, not the near one).
+        /// The path may end back on the floor it started from. Returns floor ids, first = from, or null.
+        /// </summary>
+        public static List<string> PathTo(string from, Func<string, bool> goal, Func<Jump, bool> firstHop,
+                                          string arriveFloor, string arrivalPoint, int maxFloors = 200)
+        {
+            var cmp = StringComparer.OrdinalIgnoreCase;
+            var prev = new Dictionary<string, string>(cmp);
+            var queue = new Queue<string>();
+            prev[from] = null;
+            queue.Enqueue(from);
+            Func<string, List<string>> build = last =>
+            {
+                var path = new List<string>();
+                for (var f = last; f != null; f = prev[f]) path.Insert(0, f);
+                return path;
+            };
+            while (queue.Count > 0 && prev.Count < maxFloors)
+            {
+                var cur = queue.Dequeue();
+                foreach (var j in Jumps(cur, false))
+                {
+                    var next = j.To;
+                    if (string.IsNullOrEmpty(next)) continue;
+                    if (cmp.Equals(cur, from) && firstHop != null && !firstHop(j)) continue;
+                    var restricted = arriveFloor != null && cmp.Equals(next, arriveFloor);
+                    if (restricted && j.ToPoint != arrivalPoint) continue;
+                    if (goal(next) && (restricted || arriveFloor == null || !cmp.Equals(next, from)))
+                    {
+                        var path = build(cur);
+                        path.Add(next);
+                        return path;
+                    }
+                    if (prev.ContainsKey(next)) continue;
+                    prev[next] = cur;
+                    queue.Enqueue(next);
+                }
+            }
+            return null;
+        }
+
         /// <summary>Is someone with this object name (uniqueId) or character id placed on the floor now?</summary>
         public static bool HasNpc(string floorId, string id)
         {

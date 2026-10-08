@@ -552,6 +552,7 @@ namespace SetsunaAccess
                 if (!j.gameObject.activeInHierarchy || !string.Equals(j.mapJumpParam.jumpMapName, next, System.StringComparison.OrdinalIgnoreCase)) continue;
                 var d = player == null ? 0f : (j.transform.position - player.position).sqrMagnitude;
                 if (prefer != null && j.mapJumpParam.jumpToTransform == prefer) d -= 1e8f; // the entrance to the right part
+                if (player != null && Nav.CanReach(player.position, j.transform.position, 3f) == Nav.Reach.No) d += 1e7f; // can't walk to it
                 if (d < bestD) { bestD = d; best = j; }
             }
             if (path.Count > 2)

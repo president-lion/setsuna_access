@@ -98,7 +98,8 @@ namespace SetsunaAccess
             _route = route;
             _index = 0;
             _aimAt = 0f;
-            _replanAt = Time.unscaledTime + (_route != null ? 4f : 5f);
+            // A failed chain is four big searches: retry it rarely (the 200 ms hitches in Frost Caves were these).
+            _replanAt = Time.unscaledTime + (_route != null ? 4f : 12f);
             var kind = _attempt == 0 ? "full" : _attempt == 1 ? "loose goal" : _attempt == 2 ? "slim body" : "lenient";
             var searched = _lastSearch == null ? "" : ", searched " + _lastSearch.Search.Expanded + "/" + _lastSearch.Search.Budget;
             NavLog.Line(_route == null

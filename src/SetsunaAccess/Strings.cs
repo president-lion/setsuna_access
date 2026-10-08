@@ -184,7 +184,7 @@ namespace SetsunaAccess
 
         public static string ObjectiveOtherPart(string what, string map, string via)
         {
-            return what + ", in a part of " + map + " you can't walk to from here. Go out to " + via + " and take the other entrance";
+            return what + ", in a part of " + map + " you can't walk to from here. It's entered from " + via + ". The way there";
         }
         public static string ObjectiveViaSwitch(string what) { return what + ", but you can't walk there yet. Try this switch"; }
         public const string Unstuck = "You were stuck inside the scenery. Moved you back a little.";
