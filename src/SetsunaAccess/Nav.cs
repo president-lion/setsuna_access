@@ -270,6 +270,18 @@ namespace SetsunaAccess
                                   + "; blockers: " + Blockers());
         }
 
+        /// <summary>The ground itself changed (a bridge lowered): drop everything probed on this map.</summary>
+        public static void ForgetGeometry()
+        {
+            _ground.Clear();
+            _clear.Clear();
+            _thin.Clear();
+            _wallCost.Clear();
+            _blocked.Clear();
+            _reachDirty = true;
+            _job = null;
+        }
+
         /// <summary>Forget the reachability fill (scene change, obstacles learned).</summary>
         public static void InvalidateReach() { _reachDirty = true; }
 
@@ -389,7 +401,16 @@ namespace SetsunaAccess
                 var c = ToCell(q);
                 if (c.Equals(prev)) continue;
                 float prevY;
-                if (!_walked.Contains(c) && _walkLogs < 40 && _ground.TryGetValue(prev, out prevY) && !float.IsNaN(prevY))
+                var hasPrev = _ground.TryGetValue(prev, out prevY) && !float.IsNaN(prevY);
+                // The game lets the party clip into wall meshes (it moves by transform), so a step through an
+                // upright face is the body going into a wall, not a way through: don't learn it.
+                if (hasPrev && UprightWall(prev, prevY, c, q.y, false))
+                {
+                    if (_walkLogs < 40) { _walkLogs++; NavLog.Line("clipped into a wall at " + NavLog.P(q) + ", not learned"); }
+                    prev = c;
+                    continue;
+                }
+                if (hasPrev && !_walked.Contains(c) && _walkLogs < 40)
                 {
                     var why = Refusal(prev, prevY, c, q.y);
                     if (why != null) { _walkLogs++; NavLog.Line("walked a step the probes refuse, at " + NavLog.P(q) + ": " + why); }

@@ -84,6 +84,35 @@ namespace SetsunaAccess
             return list;
         }
 
+        /// <summary>An exit (MJA, To/ToPoint set) or an arrival point (MJP) in a floor's placement.</summary>
+        public sealed class Jump
+        {
+            public string Id, To, ToPoint;
+            public Vector3 Pos;
+        }
+
+        /// <summary>
+        /// The floor's exits and arrival points as placed now. Arriving through an exit puts the party at the
+        /// destination's arrival point whose uniqueId is the exit's jumpToTransform (ObjectPlacementManager).
+        /// </summary>
+        public static List<Jump> Jumps(string floorId, bool arrivals)
+        {
+            var list = new List<Jump>();
+            ObjectPlacementManager.PlacementParameter p;
+            if (!TryPlacement(floorId, out p) || p.mapJumpParameter == null) return list;
+            foreach (var g in p.mapJumpParameter)
+            {
+                if (!Placed(g.mapJumpGroup.common) || g.mapJumpParam == null) continue;
+                foreach (var j in g.mapJumpParam)
+                {
+                    var id = j.id ?? "";
+                    if (arrivals ? id.IndexOf("MJP") < 0 : id.IndexOf("MJA") < 0) continue;
+                    list.Add(new Jump { Id = j.uniqueId, To = j.jumpMapName, ToPoint = j.jumpToTransform, Pos = j.pos });
+                }
+            }
+            return list;
+        }
+
         /// <summary>
         /// Shopkeepers run ShopNpc_* scripts; the shop's own title (UI messages SHOP00-03, as
         /// UiShopResidentWindow shows it) names the kind of shop. "" for anyone else.

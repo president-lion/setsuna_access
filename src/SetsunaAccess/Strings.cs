@@ -27,6 +27,10 @@ namespace SetsunaAccess
         // Field scanner.
         public const string CatAll = "Everything", CatPeople = "People", CatChests = "Chests", CatExits = "Exits",
                             CatSavePoints = "Save points", CatSparkles = "Sparkles";
+        public const string CatSwitches = "Switches";
+        public const string SwitchName = "Switch";
+        public const string SwitchUsed = "Switch, used";
+        public const string SwitchInactive = "Switch, not working yet";
         public const string Person = "Person", Chest = "Chest", OpenedChest = "Opened chest",
                             SavePointName = "Save point", Sparkle = "Sparkle";
         public const string NothingSelected = "Nothing selected.";
@@ -168,6 +172,11 @@ namespace SetsunaAccess
             return string.IsNullOrEmpty(target) ? what : target + " " + what;
         }
 
+        public static string ObjectiveOtherPart(string what, string map, string via)
+        {
+            return what + ", in a part of " + map + " you can't walk to from here. Go out to " + via + " and take the other entrance";
+        }
+        public static string ObjectiveViaSwitch(string what) { return what + ", but you can't walk there yet. Try this switch"; }
         public const string Unstuck = "You were stuck inside the scenery. Moved you back a little.";
         public const string NoRouteTryingStraight = "No known path. Trying straight.";
         public const string NothingForSale = "Nothing for sale.";

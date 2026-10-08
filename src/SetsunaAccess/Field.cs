@@ -12,7 +12,7 @@ namespace SetsunaAccess
     internal static class Field
     {
         // Spot and Enemy are only ever selected by the objective finder (N), never listed by category.
-        private enum Kind { Person, Chest, Exit, SavePoint, Sparkle, Spot, Enemy }
+        private enum Kind { Person, Chest, Exit, SavePoint, Sparkle, Switch, Spot, Enemy }
 
         private sealed class Target
         {
@@ -24,7 +24,7 @@ namespace SetsunaAccess
 
         // Category 0 = everything, then one per Kind.
         private static readonly string[] Categories =
-            { Strings.CatAll, Strings.CatPeople, Strings.CatChests, Strings.CatExits, Strings.CatSavePoints, Strings.CatSparkles };
+            { Strings.CatAll, Strings.CatPeople, Strings.CatChests, Strings.CatExits, Strings.CatSavePoints, Strings.CatSparkles, Strings.CatSwitches };
 
         private const float MaxRange = 1000f;
 
@@ -144,6 +144,7 @@ namespace SetsunaAccess
                 case Kind.Chest: return 1.8f;
                 case Kind.SavePoint: return 1.8f;
                 case Kind.Sparkle: return 1.2f;
+                case Kind.Switch: return 1.5f;
                 case Kind.Exit: return 3f; // house exits sit behind solid doors
                 default: return 2.5f;
             }
@@ -158,6 +159,7 @@ namespace SetsunaAccess
                 case Kind.Chest: return 1.3f;
                 case Kind.SavePoint: return 1.0f;
                 case Kind.Sparkle: return 0.7f;
+                case Kind.Switch: return 0.8f; // the game reacts within 1 m, facing it
                 case Kind.Spot: return 0.3f;
                 case Kind.Enemy: return 0.6f;
                 default: return 0.2f;
@@ -275,6 +277,7 @@ namespace SetsunaAccess
         public static void Tick()
         {
             BumpTick();
+            if (InField()) GimmickTick();
             if (!_beacon || _selected == null || Time.unscaledTime < _nextBeep) return;
             if (!InField() || !_selected.gameObject.activeInHierarchy) return;
             var gs = GameManager.NowGameState;
@@ -376,6 +379,11 @@ namespace SetsunaAccess
                     if (Reflect.Get<bool>(p, "isPopItem") && !Reflect.Get<bool>(p, "isItemGet"))
                         Add(list, Kind.Sparkle, p.transform, Strings.Sparkle, player);
 
+            // Switches and levers (GimmickSwitch): they lower bridges and open ways (Serendale's east side).
+            if (want == null || want == Kind.Switch)
+                foreach (var g in Object.FindObjectsOfType<GimmickSwitch>())
+                    if (g.gameObject.activeInHierarchy) Add(list, Kind.Switch, g.transform, SwitchName(g), player);
+
             // Drop what can't be walked to (one flood fill over the same grid the routes use). Generous
             // reach: shopkeepers talk across counters, exits sit past the walkable edge. Anything beyond the
             // area the fill covered stays listed.
@@ -391,6 +399,29 @@ namespace SetsunaAccess
 
             list.Sort((a, b) => a.Distance.CompareTo(b.Distance));
             return list;
+        }
+
+        /// <summary>"Switch", with whether it's been used or can't be used yet (GimmickSwitch isOn / isPower).</summary>
+        private static string SwitchName(GimmickSwitch g)
+        {
+            if (!Reflect.Get<bool>(g, "isPower")) return Strings.SwitchInactive;
+            return Reflect.Get<bool>(g, "isOn") ? Strings.SwitchUsed : Strings.SwitchName;
+        }
+
+        // Gimmicks (bridges, doors) change the walkable ground when they move: forget the probed grid then.
+        private static int _gimmickSig;
+        private static float _nextGimmickCheck;
+
+        private static void GimmickTick()
+        {
+            if (Time.unscaledTime < _nextGimmickCheck) return;
+            _nextGimmickCheck = Time.unscaledTime + 1f;
+            var sig = 17;
+            foreach (var g in Object.FindObjectsOfType<BaseGimmickObject>())
+                sig = sig * 31 + (Reflect.Get<bool>(g, "isOn") ? 1 : 0) + (g.isGimmickPlaying ? 2 : 0) + (g.gameObject.activeInHierarchy ? 4 : 0);
+            if (sig == _gimmickSig) return;
+            if (_gimmickSig != 0) { NavLog.Line("gimmick changed: forgetting the walking grid"); Nav.ForgetGeometry(); }
+            _gimmickSig = sig;
         }
 
         /// <summary>
@@ -462,6 +493,19 @@ namespace SetsunaAccess
             Speech.Say(Describe(name, target));
         }
 
+        /// <summary>The way on is a switch (a bridge or door it works): select it and say why.</summary>
+        public static void SelectSwitch(GimmickSwitch g, string line)
+        {
+            Select(g.transform, SwitchName(g), Kind.Switch);
+            Speech.Say(line + ". " + Describe(_selectedName, g.transform));
+        }
+
+        // Which entrance of a split map leads to the objective's part (set by Objective, used when on the
+        // neighbouring map to pick that entrance over the others to the same map).
+        private static string _preferFloor, _preferPoint;
+
+        public static void PreferEntrance(string floorId, string arrivalPoint) { _preferFloor = floorId; _preferPoint = arrivalPoint; }
+
         /// <summary>The objective is on another map: select the first exit of the route there.</summary>
         public static void SelectRoute(List<string> path, string line)
         {
@@ -469,10 +513,12 @@ namespace SetsunaAccess
             var player = Player();
             MapJump best = null;
             var bestD = float.MaxValue;
+            var prefer = string.Equals(next, _preferFloor, System.StringComparison.OrdinalIgnoreCase) ? _preferPoint : null;
             foreach (var j in Object.FindObjectsOfType<MapJump>())
             {
                 if (!j.gameObject.activeInHierarchy || !string.Equals(j.mapJumpParam.jumpMapName, next, System.StringComparison.OrdinalIgnoreCase)) continue;
                 var d = player == null ? 0f : (j.transform.position - player.position).sqrMagnitude;
+                if (prefer != null && j.mapJumpParam.jumpToTransform == prefer) d -= 1e8f; // the entrance to the right part
                 if (d < bestD) { bestD = d; best = j; }
             }
             if (path.Count > 2)

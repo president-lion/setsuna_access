@@ -285,3 +285,14 @@ and the flood called walled. Nav now records walked cells (TrackWalked); a step 
 allowed, and the first 40 walked steps the probes would refuse are logged with the collider and test that
 refused them ("walked a step the probes refuse"). Walk-to no longer refuses when no plan works: it says "No
 known path. Trying straight." and stops after 8 s without getting closer.
+
+Serendale east side (2026-10-08): offline rasterizing of the scene's two MeshColliders (research/geo/mesh.py,
+walk.py; UnityPy) shows the town centre and the east part (save point, objective EC_121180_0 at 32.5,53.5)
+separated by a ~6 m strip with no floor. Placement lists gimmicks mg_brge_01 (BridgeControl) and mg_swtc_01
+(GimmickSwitch): the way east is a bridge worked by a switch. Both Serendale arrival points (mjpoint_01 south,
+mjpoint_02 north) are in the centre, so it isn't a second entrance. The runtime pCube/wall1 HitGround boxes
+are part of that crossing. The mod now: lists switches in the scanner ("Switches" category; name says used /
+not working yet from GimmickSwitch isOn / isPower), forgets the probed grid when any BaseGimmickObject changes
+(isOn, isGimmickPlaying, active), and N, when the objective is cut off, first looks for another entrance
+(MapData.Jumps arrivals/exits) and then suggests the nearest unused switch. Walked-cell learning skips steps
+whose knee line meets an upright face: the game moves the party by transform and lets it clip into walls.

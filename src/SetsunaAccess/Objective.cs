@@ -68,16 +68,14 @@ namespace SetsunaAccess
                         if (c.gameObject.activeInHierarchy && c.name == s.Terms)
                         {
                             var name = Narration.Name(c);
-                            Field.SetObjective(c.transform, Strings.ObjectiveTalk(name.Length > 0 ? name : Strings.Person), false);
-                            return true;
+                            return Here(c.transform, Strings.ObjectiveTalk(name.Length > 0 ? name : Strings.Person), false);
                         }
                     return false;
                 case EnterTrigger:
                     foreach (var e in UnityEngine.Object.FindObjectsOfType<EventCollision>())
                         if (e.gameObject.activeInHierarchy && e.param.id == s.Terms)
                         {
-                            Field.SetObjective(e.transform, Strings.ObjectiveSpot, true);
-                            return true;
+                            return Here(e.transform, Strings.ObjectiveSpot, true);
                         }
                     return false;
                 case FloorTrigger:
@@ -86,9 +84,82 @@ namespace SetsunaAccess
                     // A battle ending: the enemy group the story is waiting for.
                     var enemy = NearestEnemy(s.Terms);
                     if (enemy == null) return false;
-                    Field.SetObjective(enemy.transform, Strings.ObjectiveEnemy(Narration.Name(enemy)), true);
-                    return true;
+                    return Here(enemy.transform, Strings.ObjectiveEnemy(Narration.Name(enemy)), true);
             }
+        }
+
+        /// <summary>Select the target here, or, if it's in a part of this map you can't walk to, the way round.</summary>
+        private static bool Here(Transform t, string name, bool walkInto)
+        {
+            if (!OtherPart(t, name)) Field.SetObjective(t, name, walkInto);
+            return true;
+        }
+
+        /// <summary>
+        /// Some maps are split into parts you enter separately (Serendale has two entrances from the world map
+        /// and its parts don't connect inside). When the reachability fill says the target can't be walked to
+        /// from here, find the arrival point nearest the target among those you can't reach either, the
+        /// neighbouring floor whose exit leads there, and select the way out to that floor; Field then prefers
+        /// that exact entrance there.
+        /// </summary>
+        private static bool OtherPart(Transform t, string name)
+        {
+            var player = Leader();
+            var floor = SceneManager.CurrentFloorInfo;
+            if (player == null || floor == null) return false;
+            if (Nav.CanReach(player.position, t.position, 3f) != Nav.Reach.No) return false;
+
+            MapData.Jump arrival = null;
+            var best = float.MaxValue;
+            foreach (var a in MapData.Jumps(floor.id, true))
+            {
+                if (Nav.CanReach(player.position, a.Pos, 2f) != Nav.Reach.No) continue;
+                var d = a.Pos - t.position; d.y = 0f;
+                if (d.sqrMagnitude < best) { best = d.sqrMagnitude; arrival = a; }
+            }
+            if (arrival == null) { Log.Append("nav.log", "objective: target unreachable here and no other arrival point"); return Switch(player, name); }
+
+            foreach (var neighbour in MapData.Exits(floor.id))
+                foreach (var j in MapData.Jumps(neighbour, false))
+                {
+                    if (!string.Equals(j.To, floor.id, StringComparison.OrdinalIgnoreCase) || j.ToPoint != arrival.Id) continue;
+                    var path = MapData.PathTo(floor.id, f => string.Equals(f, neighbour, StringComparison.OrdinalIgnoreCase));
+                    if (path == null || path.Count < 2) continue;
+                    Log.Append("nav.log", "objective: " + t.name + " is in another part of " + floor.id + "; arrival " + arrival.Id + " "
+                                          + NavLog.P(arrival.Pos) + " via " + neighbour + " exit " + j.Id);
+                    Field.PreferEntrance(floor.id, arrival.Id);
+                    Field.SelectRoute(path, Strings.ObjectiveOtherPart(name, MapData.FloorName(floor.id), MapData.FloorName(neighbour)));
+                    return true;
+                }
+            Log.Append("nav.log", "objective: target unreachable here; arrival " + arrival.Id + " has no known entrance");
+            return Switch(player, name);
+        }
+
+        /// <summary>
+        /// The target is cut off but a switch you can reach hasn't been used: that's most likely the way
+        /// (Serendale's bridge east). Select the nearest such switch.
+        /// </summary>
+        private static bool Switch(Transform player, string name)
+        {
+            GimmickSwitch best = null;
+            var bestD = float.MaxValue;
+            foreach (var g in UnityEngine.Object.FindObjectsOfType<GimmickSwitch>())
+            {
+                if (!g.gameObject.activeInHierarchy || !Reflect.Get<bool>(g, "isPower") || Reflect.Get<bool>(g, "isOn")) continue;
+                if (Nav.CanReach(player.position, g.transform.position, 1.5f) == Nav.Reach.No) continue;
+                var d = (g.transform.position - player.position).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = g; }
+            }
+            if (best == null) return false;
+            Log.Append("nav.log", "objective: cut off; suggesting switch " + best.name + " " + NavLog.P(best.transform.position));
+            Field.SelectSwitch(best, Strings.ObjectiveViaSwitch(name));
+            return true;
+        }
+
+        private static Transform Leader()
+        {
+            var m = FieldPartyManager.Member;
+            return m != null && m.Count > 0 && m[0] != null ? m[0].transform : null;
         }
 
         private static EnemyControl NearestEnemy(string groupId)
