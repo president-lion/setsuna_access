@@ -166,3 +166,8 @@ av.log`.
   so L treats it as a save spot. Walk-to cancels only on a held movement key (bound keys or arrows): in play
   it was stopping itself within a second.
 - In play the user's Key Config got rebound by accident (any key press assigns in edit mode).
+- **Walls are mostly on HitGround** (bump log: `MergedCollider` / `HitGround` objects, layer HitGround).
+  A downward ray starting inside a tall rock face misses it, so clearance also checks HitGround with a
+  capsule (and straight-line SphereCast) raised 0.6 m above the cell floor.
+- Scanner/beacon lag: the reachability flood now runs as `GridPath.FloodJob` slices (2 ms/frame);
+  clearance results kept 8 s; re-plan every 4 s; route budgets 8000 / retry 3000.

@@ -18,6 +18,8 @@ namespace SetsunaAccess
     {
         public const float CellSize = 0.5f;
         private const float MaxRise = 0.5f, MaxDrop = 0.45f;
+        // Ground-layer geometry higher than this above a cell's floor is a wall, not a step.
+        private const float WallCheckHeight = 0.6f;
 
         private static int _groundMask = -1, _blockMask;
         private static readonly Dictionary<Cell, float> _ground = new Dictionary<Cell, float>(); // NaN = no ground
@@ -278,7 +280,11 @@ namespace SetsunaAccess
             var h = Mathf.Max(FieldPartyManager.CollisionHeight, r * 2f + 0.2f);
             var p = Center(c, y);
             ok = !Physics.CheckCapsule(p + Vector3.up * (r + 0.3f), p + Vector3.up * Mathf.Max(h - r, r + 0.31f), r,
-                                       _blockMask, QueryTriggerInteraction.Ignore);
+                                       _blockMask, QueryTriggerInteraction.Ignore)
+                 // Rock faces and cliffs are part of the ground mesh (HitGround). Check that layer too, but
+                 // from above step height so the floor, slopes and small steps never count as walls.
+                 && !Physics.CheckCapsule(p + Vector3.up * (WallCheckHeight + r), p + Vector3.up * Mathf.Max(h - r, WallCheckHeight + r + 0.01f), r,
+                                          _groundMask, QueryTriggerInteraction.Ignore);
             _clear[c] = ok;
             return ok;
         }
@@ -300,6 +306,7 @@ namespace SetsunaAccess
             var origin = a + Vector3.up * (r + 0.35f);
             var dir = flat / dist;
             if (Physics.SphereCast(origin, r, dir, out _hit, dist, _blockMask, QueryTriggerInteraction.Ignore)) return false;
+            if (Physics.SphereCast(a + Vector3.up * (WallCheckHeight + r), r, dir, out _hit, dist, _groundMask, QueryTriggerInteraction.Ignore)) return false;
             var y = a.y;
             for (var t = CellSize; t < dist; t += CellSize)
             {
