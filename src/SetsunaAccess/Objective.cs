@@ -36,17 +36,23 @@ namespace SetsunaAccess
             foreach (var s in steps)
                 if (TryHere(s)) return;
 
-            // Monsters standing in the way of the story (e.g. a battle that has to be won).
-            var enemy = NearestEnemy(null);
-            if (enemy != null)
-            {
-                Field.SetObjective(enemy.transform, Strings.ObjectiveEnemy(Narration.Name(enemy)), true);
-                return;
-            }
-
-            // Elsewhere: the nearest map that holds the target.
+            // Elsewhere: the nearest map that holds the target. This comes before any stray monster: in
+            // Serendale, after the story's battle was won, N sent the party at a leftover field monster
+            // behind a barrier while the story wanted the next map.
             foreach (var s in steps)
                 if (TryElsewhere(s)) return;
+
+            // Nothing known: monsters around may be what's in the way (only when the table names no battle
+            // group we could look for and no map).
+            if (steps.Count == 0)
+            {
+                var enemy = NearestEnemy(null);
+                if (enemy != null)
+                {
+                    Field.SetObjective(enemy.transform, Strings.ObjectiveEnemy(Narration.Name(enemy)), true);
+                    return;
+                }
+            }
 
             Speech.Say(Strings.ObjectiveUnknown);
         }
@@ -117,6 +123,8 @@ namespace SetsunaAccess
                 default: holds = f => MapData.HasEnemyGroup(f, s.Terms); break;
             }
             var path = MapData.PathTo(floor.id, holds);
+            Log.Append("nav.log", "objective elsewhere: " + s.Trigger + "/" + s.Terms + " from " + floor.id + " -> "
+                                  + (path == null ? "no map path" : string.Join(" > ", path.ToArray())));
             if (path == null || path.Count < 2) return false;
             Field.SelectRoute(path, Strings.ObjectiveGoTo(MapData.FloorName(path[path.Count - 1])));
             return true;

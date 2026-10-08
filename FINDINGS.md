@@ -252,3 +252,8 @@ ames.txt`; built-in defaults in embedded `src/SetsunaAccess/CustomNames.txt`
   vSyncCount 0, targetFrameRate -1, then after WaitForEndOfFrame the main thread Thread.Sleeps the rest of the
   frame (timeBeginPeriod(1)). perf.log logs main-thread work per frame and the time slept, to tell a busy
   wait from genuinely heavy frames or other threads.
+
+Objective order (2026-10-08): at progress 121100 GameFlow says "floor in MA_0010_01" (the story battle
+EBT_121080 was already won), but N fell back to the nearest field monster before looking for the map, and sent
+the party at a stray enemy behind Serendale's barrier. Now: this area's target, then the map path, and the
+nearest-enemy guess only when the table has no step at all. Map-path results are logged to nav.log.
