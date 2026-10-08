@@ -139,3 +139,8 @@ state where they already exist; the field code checks the level name contains "_
 - Floors have no sub-names: house interiors carry their village's `mapName`. Exit labels add the
   destination's people / save point when names repeat. `L` = breadth-first search over exits for the
   closest floor with a placed save point, selecting the first exit.
+- **Buildings have no names in the data.** House interiors reuse the village's FloorDataMessage entry,
+  Snow Chronicles geography has no per-floor names, and no `CommonSign` text names a building (signs read
+  `ScenarioMessageData_NormalConversation` by the EventCollision id; none mention shops or houses).
+  What identifies a building is who works there: shopkeepers' placement `common.script` is
+  `ShopNpc_Item/Magic/Cooking/Accessory`, named with the shop's own title (UI messages SHOP01/00/02/03).

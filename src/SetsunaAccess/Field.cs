@@ -242,7 +242,9 @@ namespace SetsunaAccess
                 foreach (var n in Object.FindObjectsOfType<NPCControl>())
                 {
                     var nm = n.npcChara == null ? "" : TextClean.Clean(n.npcChara.name);
-                    Add(list, Kind.Person, n.transform, nm.Length > 0 ? nm : Strings.Person, player);
+                    if (nm.Length == 0) nm = Strings.Person;
+                    var shop = MapData.ShopName(n.param.script);
+                    Add(list, Kind.Person, n.transform, shop.Length > 0 ? Strings.WithShop(nm, shop) : nm, player);
                 }
             if (want == null || want == Kind.Chest)
                 foreach (var c in Object.FindObjectsOfType<ItemBox>())
@@ -288,7 +290,7 @@ namespace SetsunaAccess
                 if (name.Length > 0 && (names[name] > 1 || name == here))
                 {
                     var info = MapData.Contents(id);
-                    label = Strings.ExitDetail(label, info.People, info.SavePoint);
+                    label = Strings.ExitDetail(label, info.Shops, info.People, info.SavePoint);
                 }
                 result.Add(new KeyValuePair<MapJump, string>(j, label));
             }

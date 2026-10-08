@@ -57,10 +57,16 @@ namespace SetsunaAccess
         public const string NoSavePointFound = "No save point found nearby.";
         public const string SavePointHere = "There's a save point in this area.";
 
-        /// <summary>"Exit to Nive Village: Innkeeper, Old Woman, save point".</summary>
+        /// <summary>"Exit to Nive Village: Item Shop, Shopkeeper, Old Woman, save point".</summary>
         public static string ExitDetail(string exit, System.Collections.Generic.List<string> people, bool savePoint)
         {
-            var parts = new System.Collections.Generic.List<string>();
+            return ExitDetail(exit, new System.Collections.Generic.List<string>(), people, savePoint);
+        }
+
+        public static string ExitDetail(string exit, System.Collections.Generic.List<string> shops,
+                                        System.Collections.Generic.List<string> people, bool savePoint)
+        {
+            var parts = new System.Collections.Generic.List<string>(shops);
             for (var i = 0; i < people.Count && i < 3; i++) parts.Add(people[i]);
             if (savePoint) parts.Add("save point");
             return parts.Count == 0 ? exit : exit + ": " + string.Join(", ", parts.ToArray());
@@ -79,6 +85,7 @@ namespace SetsunaAccess
 
         public static string Percent(int p) { return p + " percent"; }
         public static string Option(int index, int count) { return "option " + (index + 1) + " of " + count; }
+        public static string WithShop(string person, string shop) { return person + ", " + shop; }
         public static string CountPrice(int count, string price) { return count + ", price " + price; }
         public static string Hp(int now, int max) { return "HP " + now + " of " + max; }
         public static string Mp(int now, int max) { return "MP " + now + " of " + max; }

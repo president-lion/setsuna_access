@@ -24,6 +24,7 @@ namespace SetsunaAccess
 
         public sealed class Summary
         {
+            public readonly List<string> Shops = new List<string>();
             public readonly List<string> People = new List<string>();
             public bool SavePoint;
         }
@@ -54,6 +55,8 @@ namespace SetsunaAccess
                     if (!Placed(g.npcGroup.common) || g.npcParam == null) continue;
                     foreach (var n in g.npcParam)
                     {
+                        var shop = ShopName(n.common.script);
+                        if (shop.Length > 0 && !s.Shops.Contains(shop)) s.Shops.Add(shop);
                         NPCCharacter npc;
                         if (!ParameterManager.GetNPCCharacter(Common.CharacterIdToIndex(n.id), out npc) || npc == null) continue;
                         var name = TextClean.Clean(npc.name);
@@ -79,6 +82,25 @@ namespace SetsunaAccess
                     if (!string.IsNullOrEmpty(j.jumpMapName) && !list.Contains(j.jumpMapName)) list.Add(j.jumpMapName);
             }
             return list;
+        }
+
+        /// <summary>
+        /// Shopkeepers run ShopNpc_* scripts; the shop's own title (UI messages SHOP00-03, as
+        /// UiShopResidentWindow shows it) names the kind of shop. "" for anyone else.
+        /// </summary>
+        public static string ShopName(string script)
+        {
+            string id;
+            switch (script ?? "")
+            {
+                case "ShopNpc_Magic": id = "SHOP00"; break;
+                case "ShopNpc_Item": id = "SHOP01"; break;
+                case "ShopNpc_Cooking": id = "SHOP02"; break;
+                case "ShopNpc_Accessory": id = "SHOP03"; break;
+                default: return "";
+            }
+            string name;
+            return ParameterManager.GetUIMessageData(id, out name) && name != null ? TextClean.Clean(name) : "";
         }
 
         // ---- search ---------------------------------------------------------------------
