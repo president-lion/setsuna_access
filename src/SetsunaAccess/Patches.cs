@@ -74,6 +74,9 @@ namespace SetsunaAccess
             Hook(h, sp, "SetState", prefix: nameof(Special_BeforeState), postfix: nameof(Special_State));
             Hook(h, sp, "SetItemData", postfix: nameof(Special_Item));
 
+            // Empty buy list (e.g. a chef with no recipes yet): the window shows a message instead.
+            Hook(h, typeof(UiShopBuyWindow), "Setup_Blank", postfix: nameof(ShopBuy_Blank));
+
             // Shop quantity / price confirmation.
             Hook(h, typeof(UiShopConfirmation), "Open", new[] { typeof(int), typeof(int) }, postfix: nameof(ShopConfirm_Open));
             Hook(h, typeof(UiShopConfirmation), "Update_Number", postfix: nameof(ShopConfirm_Number));
@@ -352,6 +355,16 @@ namespace SetsunaAccess
         private static void Special_Item(UiShopSpecialWindow __instance)
         {
             Guard("Special.Item", () => ShopSpecial.OnSetItemData(__instance));
+        }
+
+        private static void ShopBuy_Blank(UiShopBuyWindow __instance)
+        {
+            Guard("Shop.Blank", () =>
+            {
+                var type = (UiShopBuyType)Reflect.Int(__instance, "_currentBuyType");
+                var msg = TextClean.Clean(type.ToNotMessage());
+                Speech.Say(msg.Length > 0 ? msg : Strings.NothingForSale, false);
+            });
         }
 
         // ---- shop confirmation ------------------------------------------------------------

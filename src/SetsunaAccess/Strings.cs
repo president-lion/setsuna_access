@@ -169,6 +169,8 @@ namespace SetsunaAccess
             return string.IsNullOrEmpty(target) ? what : target + " " + what;
         }
 
+        public const string NothingForSale = "Nothing for sale.";
+
         // Magic Consortium > Obtain Spritnite.
         public static string Owned(int n) { return "You have " + n; }
         public static string Needs(string list) { return "Needs " + list; }

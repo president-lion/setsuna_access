@@ -270,3 +270,5 @@ House doors (Purikka, 2026-10-08): doors are solid ground-layer colliders (col_m
 exit trigger (mjarea_*) sits just behind them, so no walkable cell was within the loose goal (1.7 m) of the
 exit point and every plan failed. Exit fallbacks now aim for within 3 m, the scanner counts exits reachable
 within 3 m, and the walk's last 3.5 m to an exit go straight in without wall sliding.
+
+Empty shop lists: UiShopBuyWindow.Setup_Blank shows blankWindow with UiShopBuyType.ToNotMessage() (SHOP73 items, SHOP74 cooking, ...). A chef sells nothing until recipes are learned; the mod now speaks that message.
