@@ -32,7 +32,7 @@ namespace SetsunaAccess
         public const string Help =
             "F1 help. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
             "Control page up and page down, scanner category. Home, where is the selected object. " +
-            "Control home, walk to it; any movement key stops. End, beacon tone toward it. P party status. V scene descriptions on or off. F11 screen text dump.";
+            "Control home, walk to it; any movement key stops. End, beacon tone toward it. P party status. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
         public static string DefaultName(string name) { return "Default: " + name; }
         public static string Deleted(string text) { return "deleted " + text; }
         public static string NameChosen(string name) { return name + "."; }
@@ -54,6 +54,24 @@ namespace SetsunaAccess
         public static string Distance(int meters) { return meters <= 1 ? "close" : meters + " meters"; }
         public static string Count(int n) { return n == 1 ? "1 thing" : n + " things"; }
         public static string NothingNearby(string category) { return "No " + category.ToLowerInvariant() + " here."; }
+        public const string NoSavePointFound = "No save point found nearby.";
+        public const string SavePointHere = "There's a save point in this area.";
+
+        /// <summary>"Exit to Nive Village: Innkeeper, Old Woman, save point".</summary>
+        public static string ExitDetail(string exit, System.Collections.Generic.List<string> people, bool savePoint)
+        {
+            var parts = new System.Collections.Generic.List<string>();
+            for (var i = 0; i < people.Count && i < 3; i++) parts.Add(people[i]);
+            if (savePoint) parts.Add("save point");
+            return parts.Count == 0 ? exit : exit + ": " + string.Join(", ", parts.ToArray());
+        }
+
+        public static string SavePointRoute(string destination, System.Collections.Generic.List<string> route)
+        {
+            var steps = route.Count == 1 ? "1 area away" : route.Count + " areas away";
+            return "Nearest save point: " + destination + ", " + steps + ", through " + string.Join(", ", route.ToArray()) + ". Next:";
+        }
+
         public static string Exit(string destination)
         {
             return string.IsNullOrEmpty(destination) ? "Exit" : "Exit to " + destination;

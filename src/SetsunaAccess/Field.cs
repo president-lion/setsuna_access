@@ -248,13 +248,8 @@ namespace SetsunaAccess
                 foreach (var c in Object.FindObjectsOfType<ItemBox>())
                     Add(list, Kind.Chest, c.transform, Reflect.Get<bool>(c, "isOn") ? Strings.OpenedChest : Strings.Chest, player);
             if (want == null || want == Kind.Exit)
-                foreach (var j in Object.FindObjectsOfType<MapJump>())
-                {
-                    FloorDataInfo floor;
-                    var dest = ParameterManager.GetFloorData(j.mapJumpParam.jumpMapName, out floor) && floor != null
-                        ? TextClean.Clean(floor.mapName) : "";
-                    Add(list, Kind.Exit, j.transform, Strings.Exit(dest), player);
-                }
+                foreach (var e in ExitLabels())
+                    Add(list, Kind.Exit, e.Key.transform, e.Value, player);
             if (want == null || want == Kind.SavePoint)
                 foreach (var s in Object.FindObjectsOfType<SavePoint>())
                     Add(list, Kind.SavePoint, s.transform, Strings.SavePointName, player);
@@ -265,6 +260,80 @@ namespace SetsunaAccess
 
             list.Sort((a, b) => a.Distance.CompareTo(b.Distance));
             return list;
+        }
+
+        /// <summary>
+        /// Exits named by where they lead. Houses share their village's name, so when a name repeats
+        /// (or is the place you're already in) the label adds who is there and any save point,
+        /// read from the destination's placement data.
+        /// </summary>
+        private static List<KeyValuePair<MapJump, string>> ExitLabels()
+        {
+            var jumps = new List<MapJump>();
+            foreach (var j in Object.FindObjectsOfType<MapJump>())
+                if (j.gameObject.activeInHierarchy) jumps.Add(j);
+            var here = SceneManager.CurrentFloorInfo == null ? "" : TextClean.Clean(SceneManager.CurrentFloorInfo.mapName);
+            var names = new Dictionary<string, int>();
+            foreach (var j in jumps)
+            {
+                var n = MapData.FloorName(j.mapJumpParam.jumpMapName);
+                int c; names.TryGetValue(n, out c); names[n] = c + 1;
+            }
+            var result = new List<KeyValuePair<MapJump, string>>();
+            foreach (var j in jumps)
+            {
+                var id = j.mapJumpParam.jumpMapName;
+                var name = MapData.FloorName(id);
+                var label = Strings.Exit(name);
+                if (name.Length > 0 && (names[name] > 1 || name == here))
+                {
+                    var info = MapData.Contents(id);
+                    label = Strings.ExitDetail(label, info.People, info.SavePoint);
+                }
+                result.Add(new KeyValuePair<MapJump, string>(j, label));
+            }
+            return result;
+        }
+
+        /// <summary>L: the closest save point, here or through the exits, and select the way there.</summary>
+        public static void FindSavePoint()
+        {
+            if (!InField()) return;
+            var floor = SceneManager.CurrentFloorInfo;
+            if (floor == null) return;
+            var path = MapData.PathToSavePoint(floor.id);
+            if (path == null) { Speech.Say(Strings.NoSavePointFound); return; }
+            if (path.Count == 1)
+            {
+                _category = 4; // save points
+                _selected = null;
+                Speech.Say(Strings.SavePointHere);
+                Cycle(1);
+                return;
+            }
+            // Select the exit that starts the route, so Home and Control Home work on it.
+            var next = path[1];
+            var player = Player();
+            MapJump best = null;
+            var bestD = float.MaxValue;
+            foreach (var j in Object.FindObjectsOfType<MapJump>())
+            {
+                if (!j.gameObject.activeInHierarchy || !string.Equals(j.mapJumpParam.jumpMapName, next, System.StringComparison.OrdinalIgnoreCase)) continue;
+                var d = player == null ? 0f : (j.transform.position - player.position).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = j; }
+            }
+            var route = new List<string>();
+            for (var i = 1; i < path.Count; i++) route.Add(MapData.FloorName(path[i]));
+            var line = Strings.SavePointRoute(MapData.FloorName(path[path.Count - 1]), route);
+            if (best != null)
+            {
+                _category = 3; // exits
+                _selected = best.transform;
+                _selectedName = Strings.Exit(MapData.FloorName(next));
+                _selectedKind = Kind.Exit;
+                line += " " + Describe(_selectedName, best.transform);
+            }
+            Speech.Say(line);
         }
 
         private static void Add(List<Target> list, Kind kind, Transform t, string name, Transform player)

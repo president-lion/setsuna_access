@@ -69,6 +69,7 @@ namespace SetsunaAccess
             var typing = NameEntry.Open || Setsuna.GuiManager.IsInputName;
             if (Pressed(KeyCode.Z) && !typing) Field.SayLocation();
             if (Pressed(KeyCode.P) && !typing) Field.SayParty();
+            if (Pressed(KeyCode.L) && !typing) Field.FindSavePoint();
             if (Pressed(KeyCode.V) && !typing)
             {
                 Narration.Enabled = !Narration.Enabled;

@@ -126,3 +126,16 @@ state where they already exist; the field code checks the level name contains "_
   dialogue page. V toggles it.
 - Camp Settings rows (`UiCampConfigChoice`): value from `buttonIndex` (label = nearest Text to the highlighted
   option image) or slider `value`; names from `UiConfigCategory.ToName/ToAbout`.
+
+## Map data from parameter.cpk
+
+- `parameter.cpk` (CRI, plain @UTF tables) holds every parameter file; `tools/cpk.py` extracts them
+  (`research/params/`, not in git) and `Cpk.cs` reads them in the mod.
+- All parameter files except EncryptionData, BraveStoryMessage and Parameter are AES (RijndaelManaged
+  defaults) with key `8xTD|EgD|b?07QDj`, IV `/]s@*CxLzM!9Qd%(` (`ParameterManager.DecryptParameter`).
+- `<sceneName>Placement` = a floor's objects. `ObjectPlacementManager.CreatePlacementParameter(ref byte[],
+  ref PlacementParameter)` is pure, so the mod parses other floors with the game's own code. Group
+  visibility = `IsPlacement` logic (invalidFlg, min/maxProgress, enableFlg), reimplemented side-effect free.
+- Floors have no sub-names: house interiors carry their village's `mapName`. Exit labels add the
+  destination's people / save point when names repeat. `L` = breadth-first search over exits for the
+  closest floor with a placed save point, selecting the first exit.

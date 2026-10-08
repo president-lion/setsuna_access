@@ -70,3 +70,17 @@ public class MoreStringsTests
         Assert.Equal("Exit to Village", Strings.Exit("Village"));
     }
 }
+
+public class ExitDetailTests
+{
+    [Fact] public void AddsPeopleAndSavePoint() =>
+        Assert.Equal("Exit to Nive: Innkeeper, Boy, save point",
+            Strings.ExitDetail("Exit to Nive", new System.Collections.Generic.List<string> { "Innkeeper", "Boy" }, true));
+
+    [Fact] public void AtMostThreePeople() =>
+        Assert.Equal("Exit to Nive: A, B, C",
+            Strings.ExitDetail("Exit to Nive", new System.Collections.Generic.List<string> { "A", "B", "C", "D" }, false));
+
+    [Fact] public void NothingKnownKeepsLabel() =>
+        Assert.Equal("Exit to Nive", Strings.ExitDetail("Exit to Nive", new System.Collections.Generic.List<string>(), false));
+}

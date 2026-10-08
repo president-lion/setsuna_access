@@ -11,6 +11,7 @@
     <Compile Include="..\..\src\SetsunaAccess\TextClean.cs" Link="Linked\TextClean.cs" />
     <Compile Include="..\..\src\SetsunaAccess\RepeatFilter.cs" Link="Linked\RepeatFilter.cs" />
     <Compile Include="..\..\src\SetsunaAccess\Strings.cs" Link="Linked\Strings.cs" />
+    <Compile Include="..\..\src\SetsunaAccess\Cpk.cs" Link="Linked\Cpk.cs" />
   </ItemGroup>
 
   <ItemGroup>
