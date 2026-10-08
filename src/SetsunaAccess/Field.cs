@@ -34,6 +34,8 @@ namespace SetsunaAccess
         private static Kind _selectedKind;
         private static string _lastTelop;
         private static bool _beacon;
+        private static bool _filterUnreachable = true;
+        private static int _hidden;
         private static bool _saidNoPath;
         private static float _nextBeep;
 
@@ -89,14 +91,29 @@ namespace SetsunaAccess
             _category = (_category + step + Categories.Length) % Categories.Length;
             _index = -1;
             var list = Scan();
-            Speech.Say(Categories[_category] + ", " + Strings.Count(list.Count));
+            var line = Categories[_category] + ", " + Strings.Count(list.Count);
+            if (_hidden > 0) line += ", " + Strings.HiddenUnreachable(_hidden);
+            Speech.Say(line);
+        }
+
+        /// <summary>Shift+End: show or hide things there's no walkable way to.</summary>
+        public static void ToggleReachFilter()
+        {
+            _filterUnreachable = !_filterUnreachable;
+            Speech.Say(_filterUnreachable ? Strings.FilterOn : Strings.FilterOff);
         }
 
         public static void Cycle(int step)
         {
             if (!InField()) return;
             var list = Scan();
-            if (list.Count == 0) { Speech.Say(Strings.NothingNearby(Categories[_category])); return; }
+            if (list.Count == 0)
+            {
+                var none = Strings.NothingNearby(Categories[_category]);
+                if (_hidden > 0) none += " " + Strings.HiddenUnreachable(_hidden) + ".";
+                Speech.Say(none);
+                return;
+            }
             // Keep the same object selected even if the distance order changed.
             var cur = _selected == null ? -1 : list.FindIndex(t => t.Transform == _selected);
             _index = cur < 0 ? (step > 0 ? 0 : list.Count - 1) : (cur + step + list.Count) % list.Count;
@@ -111,6 +128,19 @@ namespace SetsunaAccess
             _selectedName = name;
             _selectedKind = kind;
             Guide.SetTarget(t, ArriveRadius(kind));
+        }
+
+        /// <summary>How close a walkable spot must be for something to count as reachable.</summary>
+        private static float ReachSlack(Kind kind)
+        {
+            switch (kind)
+            {
+                case Kind.Person: return 2.2f;
+                case Kind.Chest: return 1.8f;
+                case Kind.SavePoint: return 1.8f;
+                case Kind.Sparkle: return 1.2f;
+                default: return 2.5f;
+            }
         }
 
         /// <summary>Stop where the game lets you interact; walk right into exits.</summary>
@@ -198,7 +228,9 @@ namespace SetsunaAccess
                 {
                     var right = MainCameraControl.cameraTransform.right; right.y = 0f; right.Normalize();
                     var fwd = Vector3.Cross(right, Vector3.up).normalized;
-                    Guide.Stuck(leader.position, right * InputManager.Horizontal + fwd * InputManager.Vertical);
+                    var push = right * InputManager.Horizontal + fwd * InputManager.Vertical;
+                    Nav.LearnFromBump(leader.position, push);
+                    Guide.Stuck(leader.position, push);
                 }
             }
             _bumpSince = now;
@@ -309,6 +341,19 @@ namespace SetsunaAccess
                     if (Reflect.Get<bool>(p, "isPopItem") && !Reflect.Get<bool>(p, "isItemGet"))
                         Add(list, Kind.Sparkle, p.transform, Strings.Sparkle, player);
 
+            // Drop what can't be walked to (one flood fill over the same grid the routes use). Generous
+            // reach: shopkeepers talk across counters, exits sit past the walkable edge. Anything beyond the
+            // area the fill covered stays listed.
+            _hidden = 0;
+            if (_filterUnreachable)
+                list.RemoveAll(t =>
+                {
+                    var reach = Nav.CanReach(player.position, t.Transform.position, ReachSlack(t.Kind));
+                    if (reach != Nav.Reach.No) return false;
+                    _hidden++;
+                    return true;
+                });
+
             list.Sort((a, b) => a.Distance.CompareTo(b.Distance));
             return list;
         }
@@ -354,6 +399,7 @@ namespace SetsunaAccess
             if (floor == null) return;
             var path = MapData.PathToSavePoint(floor.id);
             if (path == null) { Speech.Say(Strings.NoSavePointFound); return; }
+            var worldSave = MapData.IsWorldMap(path[path.Count - 1]) && !MapData.Contents(path[path.Count - 1]).SavePoint;
             if (path.Count == 1)
             {
                 _category = 4; // save points
@@ -375,7 +421,7 @@ namespace SetsunaAccess
             }
             var route = new List<string>();
             for (var i = 1; i < path.Count; i++) route.Add(MapData.FloorName(path[i]));
-            var line = Strings.SavePointRoute(MapData.FloorName(path[path.Count - 1]), route);
+            var line = worldSave ? Strings.SaveOnWorldMap(route) : Strings.SavePointRoute(MapData.FloorName(path[path.Count - 1]), route);
             if (best != null)
             {
                 _category = 3; // exits

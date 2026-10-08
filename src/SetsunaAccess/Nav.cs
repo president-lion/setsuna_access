@@ -30,7 +30,42 @@ namespace SetsunaAccess
         private static Vector3 Center(Cell c, float y) { return new Vector3((c.X + 0.5f) * CellSize, y, (c.Z + 0.5f) * CellSize); }
 
         /// <summary>Remember a cell the player couldn't get through, until the map changes.</summary>
-        public static void MarkBlocked(Vector3 p) { _blocked.Add(ToCell(p)); }
+        public static void MarkBlocked(Vector3 p) { _blocked.Add(ToCell(p)); _reach = null; }
+
+        /// <summary>
+        /// The player pushed toward dir and didn't move. Mark a short strip of cells across the way as
+        /// blocked (walls are long, one cell at a time learns too slowly), and look at what solid collider
+        /// is actually there: if its layer isn't treated as blocking yet, start treating it so this session.
+        /// Everything found is logged to nav.log.
+        /// </summary>
+        public static void LearnFromBump(Vector3 pos, Vector3 dir)
+        {
+            Prepare();
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.0001f) return;
+            dir.Normalize();
+            var side = Vector3.Cross(Vector3.up, dir);
+            var ahead = pos + dir * (CellSize * 1.2f);
+            for (var i = -1; i <= 1; i++) _blocked.Add(ToCell(ahead + side * (i * CellSize)));
+            _reach = null;
+
+            var probe = pos + dir * 0.5f + Vector3.up * 0.8f;
+            var player = LayerMask.NameToLayer("Player");
+            var ground = LayerMask.NameToLayer("HitGround");
+            // Whatever is underfoot is floor, never a wall to learn.
+            RaycastHit under;
+            var underLayer = Physics.Raycast(pos + Vector3.up * 0.5f, Vector3.down, out under, 2f, ~(1 << player))
+                ? under.collider.gameObject.layer : -1;
+            foreach (var col in Physics.OverlapSphere(probe, 0.6f))
+            {
+                if (col == null || col.isTrigger || col.gameObject.layer == player) continue;
+                var layer = col.gameObject.layer;
+                var bit = 1 << layer;
+                var learned = layer != ground && layer != underLayer && (_blockMask & bit) == 0;
+                if (learned) { _blockMask |= bit; _clear.Clear(); }
+                Log.Append("nav.log", "bump: " + col.name + " layer " + LayerMask.LayerToName(layer) + (learned ? " (now blocking)" : ""));
+            }
+        }
 
         /// <summary>
         /// Route from <paramref name="from"/> to within <paramref name="goalRadius"/> of <paramref name="to"/>:
@@ -61,6 +96,62 @@ namespace SetsunaAccess
             pts[0] = from;
             return pts;
         }
+
+        // ---- reachability (scanner filter) -------------------------------------------------
+
+        private static HashSet<Cell> _reach;
+        private static bool _reachComplete;
+        private static float _reachMaxDist;
+        private static Vector3 _reachFrom;
+        private static float _reachAt = -100f;
+        private static string _reachScene;
+
+        public enum Reach { Yes, No, Unknown }
+
+        /// <summary>
+        /// Can the player walk to within <paramref name="slack"/> of <paramref name="p"/>? One flood fill from
+        /// the player, reused for a few seconds while they stay put. Unknown = beyond what the fill covered.
+        /// </summary>
+        public static Reach CanReach(Vector3 player, Vector3 p, float slack)
+        {
+            Prepare();
+            var now = Time.unscaledTime;
+            var moved = player - _reachFrom; moved.y = 0f;
+            if (_reach == null || _reachScene != _scene || now - _reachAt > 5f || moved.magnitude > 2f)
+            {
+                _clear.Clear();
+                var start = ToCell(player);
+                _ground[start] = player.y;
+                _reach = GridPath.Flood(start, CanStep, 40000, out _reachComplete);
+                _reachFrom = player;
+                _reachAt = now;
+                _reachScene = _scene;
+                _reachMaxDist = 0f;
+                foreach (var c in _reach)
+                {
+                    var d = Center(c, 0f) - new Vector3(player.x, 0f, player.z);
+                    if (d.magnitude > _reachMaxDist) _reachMaxDist = d.magnitude;
+                }
+                Log.Append("nav.log", "flood " + _reach.Count + " cells, complete=" + _reachComplete + ", radius " + _reachMaxDist.ToString("0"));
+            }
+
+            var center = ToCell(p);
+            var n = Mathf.CeilToInt(slack / CellSize);
+            for (var dx = -n; dx <= n; dx++)
+                for (var dz = -n; dz <= n; dz++)
+                {
+                    var c = new Cell(center.X + dx, center.Z + dz);
+                    if (!_reach.Contains(c)) continue;
+                    var d = Center(c, 0f) - new Vector3(p.x, 0f, p.z);
+                    if (d.magnitude <= slack + CellSize * 0.75f) return Reach.Yes;
+                }
+            if (_reachComplete) return Reach.No;
+            var far = p - player; far.y = 0f;
+            return far.magnitude < _reachMaxDist - 2f ? Reach.No : Reach.Unknown;
+        }
+
+        /// <summary>Forget the reachability fill (scene change, obstacles learned).</summary>
+        public static void InvalidateReach() { _reach = null; }
 
         /// <summary>Index of the farthest route point (within lookAhead points) reachable straight from pos.</summary>
         public static int LookAhead(List<Vector3> route, int fromIndex, Vector3 pos, int lookAhead = 24)

@@ -32,7 +32,7 @@ namespace SetsunaAccess
         public const string Help =
             "F1 help. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
             "Control page up and page down, scanner category. Home, where is the selected object. " +
-            "Control home, walk to it; any movement key stops. End, beacon tone toward it. P party status. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
+            "Control home, walk to it; any movement key stops. End, beacon tone toward it. Shift end, show or hide unreachable things. P party status. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
         public static string DefaultName(string name) { return "Default: " + name; }
         public static string Deleted(string text) { return "deleted " + text; }
         public static string NameChosen(string name) { return name + "."; }
@@ -54,10 +54,18 @@ namespace SetsunaAccess
         public static string Distance(int meters) { return meters <= 1 ? "close" : meters + " meters"; }
         public static string Count(int n) { return n == 1 ? "1 thing" : n + " things"; }
         public static string NothingNearby(string category) { return "No " + category.ToLowerInvariant() + " here."; }
+        public const string FilterOn = "Hiding things you can't walk to.";
+        public const string FilterOff = "Showing everything, reachable or not.";
+        public static string HiddenUnreachable(int n) { return n + " unreachable hidden"; }
         public const string NoPath = "No walkable path found, pointing straight.";
         public static string PathInfo(int pathMeters, string direction, int legMeters)
         {
             return "Path " + pathMeters + " meters, head " + direction + " for " + System.Math.Max(1, legMeters) + " meters";
+        }
+        public static string SaveOnWorldMap(System.Collections.Generic.List<string> route)
+        {
+            var steps = route.Count == 1 ? "1 area away" : route.Count + " areas away";
+            return "You can save from the menu on the world map, " + steps + ", through " + string.Join(", ", route.ToArray()) + ". Next:";
         }
         public const string NoSavePointFound = "No save point found nearby.";
         public const string SavePointHere = "There's a save point in this area.";

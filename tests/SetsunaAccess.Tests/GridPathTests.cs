@@ -83,4 +83,25 @@ public class GridPathTests
         var path = new List<Cell> { new Cell(0, 0), new Cell(1, 1), new Cell(2, 1) };
         Assert.Equal(1f + 1.41421356f, GridPath.Length(path), 3);
     }
+
+    [Fact]
+    public void FloodStopsAtWalls()
+    {
+        var (s, g, step) = Map(
+            "S.#G",
+            "..#.");
+        var reached = GridPath.Flood(s, step, 1000, out var complete);
+        Assert.True(complete);
+        Assert.Equal(4, reached.Count);          // the two left columns only
+        Assert.DoesNotContain(g, reached);
+    }
+
+    [Fact]
+    public void FloodReportsBudgetExhausted()
+    {
+        var (s, _, step) = Map("S.........");
+        var reached = GridPath.Flood(s, step, 4, out var complete);
+        Assert.False(complete);
+        Assert.Equal(4, reached.Count);
+    }
 }

@@ -158,3 +158,11 @@ state where they already exist; the field code checks the level name contains "_
   for exits past the walkable edge. Bumps and walk-to stalls mark the cell ahead blocked for that scene.
 - Each plan is logged to `UserData\SetsunaAccess
 av.log`.
+- Scanner filter: one `GridPath.Flood` from the player (40000 cells, cached 5 s / 2 m) over the same grid;
+  objects need a reached cell within 1.2-2.5 m (people 2.2 for counters, exits 2.5). Beyond the fill = kept.
+  Shift+End toggles. Bumps mark a 3-cell strip and log the solid colliders hit; a layer not yet blocking
+  (and not the floor underfoot) is added to the block mask for the session.
+- World map = scene `ma_0000_01` (`Common.SCENE_NAME_WORLD_MAP`); save allowed there up to progress 421010,
+  so L treats it as a save spot. Walk-to cancels only on a held movement key (bound keys or arrows): in play
+  it was stopping itself within a second.
+- In play the user's Key Config got rebound by accident (any key press assigns in edit mode).

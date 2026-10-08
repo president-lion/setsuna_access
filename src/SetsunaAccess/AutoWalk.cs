@@ -64,9 +64,8 @@ namespace SetsunaAccess
                 if (_h == null || _v == null) { Stop(null); Log.Error("AutoWalk", "stick fields missing"); return; }
             }
 
-            // The player took over.
-            // (Unity's axis eases out for a moment after a key is released, so ignore the first instant.)
-            if (Time.time - _startedAt > 0.3f && ((float)_h.GetValue(input) != 0f || (float)_v.GetValue(input) != 0f))
+            // The player took over: only a real movement key counts (axis values linger and drift).
+            if (Time.time - _startedAt > 0.3f && MovementKeyHeld())
             {
                 Stop(Strings.WalkCancelled);
                 return;
@@ -100,6 +99,7 @@ namespace SetsunaAccess
                     _stuck++;
                     if (_stuck > 6) { Stop(Strings.Blocked(_name)); return; }
                     // Learn the obstacle and re-plan; after a couple of tries also sidestep briefly.
+                    Nav.LearnFromBump(leader.position, dir);
                     Guide.Stuck(leader.position, dir);
                     if (_stuck >= 3)
                     {
@@ -121,6 +121,24 @@ namespace SetsunaAccess
             var speed = d.magnitude < 2.5f ? 0.5f : 1f;
             _h.SetValue(input, Vector3.Dot(dir, right) * stick * speed);
             _v.SetValue(input, Vector3.Dot(dir, fwd) * stick * speed);
+        }
+
+        private static readonly InputManager.InputKey[] MoveKeys =
+        {
+            InputManager.InputKey.InputKey_Up, InputManager.InputKey.InputKey_Down,
+            InputManager.InputKey.InputKey_Left, InputManager.InputKey.InputKey_Right
+        };
+
+        private static bool MovementKeyHeld()
+        {
+            if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.DownArrow) ||
+                Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow)) return true;
+            foreach (var k in MoveKeys)
+            {
+                var code = InputManager.GetKeyBoardSetting(k);
+                if (code != KeyCode.None && Input.GetKey(code)) return true;
+            }
+            return false;
         }
 
         private static Transform Leader()

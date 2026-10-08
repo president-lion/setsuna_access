@@ -65,6 +65,35 @@ namespace SetsunaAccess
             return null;
         }
 
+        /// <summary>
+        /// Every cell reachable from start (same stepping rules as Find), up to maxCells.
+        /// complete is false when the budget ran out before the area was exhausted.
+        /// </summary>
+        public static HashSet<Cell> Flood(Cell start, Func<Cell, Cell, bool> canStep, int maxCells, out bool complete)
+        {
+            var seen = new HashSet<Cell> { start };
+            var queue = new Queue<Cell>();
+            queue.Enqueue(start);
+            complete = true;
+            while (queue.Count > 0)
+            {
+                if (seen.Count >= maxCells) { complete = false; break; }
+                var cur = queue.Dequeue();
+                for (var dx = -1; dx <= 1; dx++)
+                    for (var dz = -1; dz <= 1; dz++)
+                    {
+                        if (dx == 0 && dz == 0) continue;
+                        var next = new Cell(cur.X + dx, cur.Z + dz);
+                        if (seen.Contains(next)) continue;
+                        if (dx != 0 && dz != 0 && (!canStep(cur, new Cell(cur.X + dx, cur.Z)) || !canStep(cur, new Cell(cur.X, cur.Z + dz)))) continue;
+                        if (!canStep(cur, next)) continue;
+                        seen.Add(next);
+                        queue.Enqueue(next);
+                    }
+            }
+            return seen;
+        }
+
         /// <summary>Octile distance.</summary>
         public static float H(Cell a, Cell b)
         {

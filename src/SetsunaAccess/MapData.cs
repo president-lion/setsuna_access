@@ -118,7 +118,8 @@ namespace SetsunaAccess
             while (queue.Count > 0 && prev.Count < maxFloors)
             {
                 var cur = queue.Dequeue();
-                if (Contents(cur).SavePoint)
+                // The world map lets you save from the menu anywhere (Common.IsEnableSave).
+                if (Contents(cur).SavePoint || (IsWorldMap(cur) && EventManager.EventProgression <= 421010))
                 {
                     var path = new List<string>();
                     for (var f = cur; f != null; f = prev[f]) path.Insert(0, f);
@@ -132,6 +133,12 @@ namespace SetsunaAccess
                 }
             }
             return null;
+        }
+
+        public static bool IsWorldMap(string floorId)
+        {
+            var f = Floor(floorId);
+            return f != null && string.Equals(f.sceneName, Common.SCENE_NAME_WORLD_MAP, StringComparison.OrdinalIgnoreCase);
         }
 
         // ---- loading --------------------------------------------------------------------

@@ -78,7 +78,11 @@ namespace SetsunaAccess
             if (Pressed(KeyCode.PageUp)) { if (ctrl) Field.NextCategory(-1); else Field.Cycle(-1); }
             if (Pressed(KeyCode.PageDown)) { if (ctrl) Field.NextCategory(1); else Field.Cycle(1); }
             if (Pressed(KeyCode.Home)) { if (ctrl) Field.WalkToSelected(); else Field.RepeatSelected(); }
-            if (Pressed(KeyCode.End)) Field.ToggleBeacon();
+            if (Pressed(KeyCode.End))
+            {
+                var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+                if (shift) Field.ToggleReachFilter(); else Field.ToggleBeacon();
+            }
             if (Pressed(KeyCode.F11))
             {
                 Log.Info("UiDump", UiDump.Write());
