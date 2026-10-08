@@ -190,6 +190,15 @@ av.log`.
   slope or ground. The reachability flood now tests a 12 cm capsule and logs the top blocking colliders;
   routes test at most 0.22 m radius.
 
+Serendale (ma_0009_01), 2026-10-07: the body-width plan, the loose goal and the slim body all exhausted a closed
+area of about 2600 cells around the town centre, while the lenient reachability flood reached the save point.
+So a fourth fallback plans with the flood's own rules (ground, slope, 12 cm capsule; no rock-face rays or knee
+line) and a strong wall cost (+4 within the body radius, +1.5 within radius + 0.45 m). Re-plans start from the
+mode that last worked. Failed searches now log refusal counts (learned, no ground, rise, drop, body, rock face)
+to show which test closes an area off. Walk-to gives up after 15 s without getting 1 m closer. Home waits at
+most 30 ms for a route, then says "Finding the way" and speaks the route when the search finishes.
+perf.log names the slowest part of the mod's frame per 10 s window (and the key, for key presses).
+
 ## Story objective (N)
 
 - `GameFlow` (AES like other params) = 278 entries of `GameFlowInfo` (Pack 2, 96 bytes + flag strings,

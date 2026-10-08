@@ -25,7 +25,23 @@ namespace SetsunaAccess
             _workFrames++;
         }
 
-        public static void Begin() { _sw.Reset(); _sw.Start(); }
+        public static void Begin() { _sw.Reset(); _sw.Start(); _markMs = 0; }
+
+        private static double _markMs, _slowMs;
+        private static string _slowName;
+
+        /// <summary>The last mod key handled this frame, so a slow key press can be named.</summary>
+        public static string Key;
+
+        /// <summary>After each part of the mod's frame: remember the slowest part in this 10 s window.</summary>
+        public static void Mark(string name)
+        {
+            var now = _sw.Elapsed.TotalMilliseconds;
+            var ms = now - _markMs;
+            _markMs = now;
+            if (name == "keys" && Key != null) { name = "key " + Key; Key = null; }
+            if (ms > _slowMs) { _slowMs = ms; _slowName = name; }
+        }
 
         public static void End()
         {
@@ -47,7 +63,10 @@ namespace SetsunaAccess
             Log.Append("perf.log", "fps " + (_frames / span).ToString("0") + ", game work " + (_workMs / wf).ToString("0.0") + " ms/frame avg ("
                                    + _workMax.ToString("0") + " max), cap slept " + (_sleepMs / wf).ToString("0.0") + " ms/frame, mod "
                                    + (_totalMs / _frames).ToString("0.00") + " ms/frame avg, " + _maxMs.ToString("0.0") + " ms max, level "
-                                   + Application.loadedLevelName);
+                                   + Application.loadedLevelName
+                                   + (_slowMs >= 10 ? ", slowest " + _slowName + " " + _slowMs.ToString("0") + " ms" : ""));
+            _slowMs = 0;
+            _slowName = null;
             _workMs = _workMax = _sleepMs = 0;
             _workFrames = 0;
             _frames = 0;

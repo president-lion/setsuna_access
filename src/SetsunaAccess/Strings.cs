@@ -61,6 +61,7 @@ namespace SetsunaAccess
         public const string FilterOff = "Showing everything, reachable or not.";
         public static string HiddenUnreachable(int n) { return n + " unreachable hidden"; }
         public const string NoPath = "No walkable path found, pointing straight.";
+        public const string FindingWay = "Finding the way.";
         public static string PathInfo(int pathMeters, string direction, int legMeters)
         {
             return "Path " + pathMeters + " meters, head " + direction + " for " + System.Math.Max(1, legMeters) + " meters";

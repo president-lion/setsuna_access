@@ -28,6 +28,9 @@ namespace SetsunaAccess
         private static Vector3 _startPos;
         private static float _travelled;
         private static Vector3 _backDir;
+        // Progress check: the stuck count resets whenever a sidestep moves the party, so a wall it can't
+        // get past was bumped forever. Give up when the distance left hasn't improved for a while.
+        private static float _bestLeft, _bestAt;
 
         /// <summary>Seconds since the walk started (a held key's repeat shouldn't count as "stop").</summary>
         public static float Age { get { return Time.time - _startedAt; } }
@@ -51,6 +54,8 @@ namespace SetsunaAccess
             _lastPos = p == null ? Vector3.zero : p.position;
             _startPos = _lastPos;
             _travelled = 0f;
+            _bestLeft = float.MaxValue;
+            _bestAt = Time.time;
             NavLog.Line("walk start -> " + name + " " + NavLog.P(target.position) + " from " + NavLog.P(_lastPos) + ", arrive within " + arriveRadius.ToString("0.0"));
             Speech.Say(Strings.WalkingTo(name));
         }
@@ -86,7 +91,11 @@ namespace SetsunaAccess
             if (_target == null || !_target.gameObject.activeInHierarchy) { Stop(Strings.WalkLost); return; }
             // Menus, events and battles: hold still but keep the walk.
             var gs = GameManager.NowGameState;
-            if ((gs != GAME_STATE.FIELD && gs != GAME_STATE.WORLD) || EventManager.IsEvent || UiCampManager.IsShowing) return;
+            if ((gs != GAME_STATE.FIELD && gs != GAME_STATE.WORLD) || EventManager.IsEvent || UiCampManager.IsShowing)
+            {
+                _bestAt = Time.time; // paused time isn't lack of progress
+                return;
+            }
 
             var leader = Leader();
             if (leader == null) return;
@@ -102,6 +111,15 @@ namespace SetsunaAccess
             var dir = aim - leader.position;
             dir.y = 0f;
             dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : d.normalized;
+
+            var remaining = left > 0f ? left : d.magnitude;
+            if (remaining < _bestLeft - 1f) { _bestLeft = remaining; _bestAt = Time.time; }
+            else if (Time.time - _bestAt > 15f && !Guide.Planning)
+            {
+                NavLog.Line("walk: no progress for 15 s, " + remaining.ToString("0.0") + " m left (best " + _bestLeft.ToString("0.0") + ")");
+                Stop(Strings.Blocked(_name));
+                return;
+            }
 
             if (Time.time >= _nextCheck)
             {

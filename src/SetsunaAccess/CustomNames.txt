@@ -1,2 +1,9 @@
 # Built-in names for scanner objects, shipped with the mod. Same format as UserData\SetsunaAccess\names.txt:
 # key, a tab, then the name. Players' names.txt entries get copied here.
+MA_0000_01|Exit|mjarea_06|-75,-114	forgotten shores
+MA_0002_01|Exit|mjarea_01|3,38	world map
+MA_0002_01|Exit|mjarea_02|-6,24	office
+MA_0007_02|Exit|mjarea_01|0,-2	go out
+MA_0008_01|Exit|mjarea_01|-65,52	leave
+MA_0009_01|Exit|mjarea_01|0,-3	south exit
+MA_0009_01|Exit|mjarea_02|2,47	north exit

@@ -173,18 +173,35 @@ namespace SetsunaAccess
             if (player != null)
             {
                 Guide.SetTarget(_selected, ArriveRadius(_selectedKind));
-                Guide.Complete(player.position);
-                Vector3 aim;
-                float left;
-                if (Guide.Aim(player.position, out aim, out left))
+                if (Guide.Complete(player.position, 30)) line += ". " + PathLine(player);
+                else
                 {
-                    Vector2 screen;
-                    var leg = Relative(player.position, aim, out screen);
-                    line += ". " + Strings.PathInfo(Mathf.RoundToInt(left), Strings.Direction(Octant(screen)), Mathf.RoundToInt(leg));
+                    // Still searching: say the rest when it's done instead of freezing the game.
+                    line += ". " + Strings.FindingWay;
+                    if (!_pathPending) { _pathPending = true; Guide.Finished += SayPendingPath; }
                 }
-                else line += ". " + Strings.NoPath;
             }
             Speech.Say(line);
+        }
+
+        private static bool _pathPending;
+
+        private static void SayPendingPath()
+        {
+            Guide.Finished -= SayPendingPath;
+            _pathPending = false;
+            var player = Player();
+            if (player != null && _selected != null && Guide.Target == _selected) Speech.Say(PathLine(player), false);
+        }
+
+        private static string PathLine(Transform player)
+        {
+            Vector3 aim;
+            float left;
+            if (!Guide.Aim(player.position, out aim, out left)) return Strings.NoPath;
+            Vector2 screen;
+            var leg = Relative(player.position, aim, out screen);
+            return Strings.PathInfo(Mathf.RoundToInt(left), Strings.Direction(Octant(screen)), Mathf.RoundToInt(leg));
         }
 
         public static void WalkToSelected()

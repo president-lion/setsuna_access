@@ -111,15 +111,20 @@ namespace SetsunaAccess
             public bool Done { get { return Search.Done; } }
         }
 
-        public static RouteJob StartRoute(Vector3 from, Vector3 to, float goalRadius, int budget = 8000, bool slim = false)
+        /// <summary>How strictly a route is planned: the full body, a slim body for narrow doorways, or the
+        /// reachability flood's own lenient rules (no rock-face rays) with a strong pull to the middle of paths.</summary>
+        public enum Mode { Full, Slim, Lenient }
+
+        public static RouteJob StartRoute(Vector3 from, Vector3 to, float goalRadius, int budget = 8000, Mode mode = Mode.Full)
         {
             Prepare();
-            if (_slim != slim)
+            if (_mode != mode)
             {
-                _slim = slim;
+                _mode = mode;
                 _clear.Clear();
                 _wallCost.Clear();
             }
+            _whyR = new int[6];
             ExpireClearance();
             var start = ToCell(from);
             _ground[start] = from.y;
@@ -127,7 +132,8 @@ namespace SetsunaAccess
             r2 *= r2;
             var goal = new Vector3(to.x, 0f, to.z);
             System.Func<Cell, bool> isGoal = c => (Center(c, 0f) - goal).sqrMagnitude <= r2;
-            return new RouteJob { Search = new GridPath.SearchJob(start, ToCell(to), isGoal, CanStep, budget, WallCost), From = from, Goal = goalRadius };
+            System.Func<Cell, Cell, bool> step = mode == Mode.Lenient ? (System.Func<Cell, Cell, bool>)CanStepRoute : CanStep;
+            return new RouteJob { Search = new GridPath.SearchJob(start, ToCell(to), isGoal, step, budget, WallCost), From = from, Goal = goalRadius };
         }
 
         /// <summary>Advance a route job for up to ms milliseconds; returns true when it has finished.</summary>
@@ -388,18 +394,48 @@ namespace SetsunaAccess
         // Why flood steps were refused (logged with each finished flood).
         private static int _whyLearned, _whyNoGround, _whyRise, _whyDrop, _whyBlocked;
 
+        // Why route steps were refused: learned, no ground, rise, drop, body/rays, knee line (logged on a failed search).
+        private static int[] _whyR = new int[6];
+
+        public static string RouteRefusals()
+        {
+            return "learned " + _whyR[0] + ", no ground " + _whyR[1] + ", rise " + _whyR[2] + ", drop " + _whyR[3]
+                   + ", body " + _whyR[4] + ", rock face " + _whyR[5];
+        }
+
         private static bool CanStep(Cell from, Cell to)
         {
-            if (_blocked.Contains(to)) return false;
+            if (_blocked.Contains(to)) { _whyR[0]++; return false; }
             float fromY;
             if (!_ground.TryGetValue(from, out fromY) || float.IsNaN(fromY)) return false;
             var toY = Ground(to, fromY);
-            if (float.IsNaN(toY) || toY > fromY + MaxRise || toY < fromY - MaxDrop) return false;
-            if (!Clear(to, toY)) return false;
+            if (float.IsNaN(toY)) { _whyR[1]++; return false; }
+            if (toY > fromY + MaxRise) { _whyR[2]++; return false; }
+            if (toY < fromY - MaxDrop) { _whyR[3]++; return false; }
+            if (!Clear(to, toY)) { _whyR[4]++; return false; }
             // Rock faces and cliffs are part of the ground mesh (HitGround), and a downward ray that starts
             // inside one misses it. A thin line at knee height between the two cells catches the face, while
             // branches, arches and overhangs above it don't count (a full-height check hid real paths).
-            return !Physics.Linecast(Center(from, fromY + WallCheckHeight), Center(to, toY + WallCheckHeight), _groundMask);
+            if (Physics.Linecast(Center(from, fromY + WallCheckHeight), Center(to, toY + WallCheckHeight), _groundMask)) { _whyR[5]++; return false; }
+            return true;
+        }
+
+        /// <summary>
+        /// Lenient route stepping: the reachability flood's rules (ground, slope, a thin capsule against walls
+        /// and people). The last fallback when the body-width plan finds the area closed off (stairs and town
+        /// steps whose risers the rock-face rays mistake for walls). WallCost keeps it to the middle of paths.
+        /// </summary>
+        private static bool CanStepRoute(Cell from, Cell to)
+        {
+            if (_blocked.Contains(to)) { _whyR[0]++; return false; }
+            float fromY;
+            if (!_ground.TryGetValue(from, out fromY) || float.IsNaN(fromY)) return false;
+            var toY = Ground(to, fromY);
+            if (float.IsNaN(toY)) { _whyR[1]++; return false; }
+            if (toY > fromY + MaxRise) { _whyR[2]++; return false; }
+            if (toY < fromY - MaxDrop) { _whyR[3]++; return false; }
+            if (!ThinClear(to, toY)) { _whyR[4]++; return false; }
+            return true;
         }
 
         /// <summary>Ground height in a cell, probing from just above the neighbour's height (bridges, stairs).</summary>
@@ -455,7 +491,12 @@ namespace SetsunaAccess
             float y;
             if (!_ground.TryGetValue(c, out y) || float.IsNaN(y)) return 0f;
             var near = Radius() + 0.45f;
-            cost = RingHits(Center(c, y), 0.6f, near, _groundMask | _blockMask) ? 1.5f : 0f;
+            var p = Center(c, y);
+            if (_mode == Mode.Lenient)
+                // No body test in this mode: keep well clear of anything within the body's width.
+                cost = RingHits(p, 0.6f, BodyRadius(), _groundMask | _blockMask) ? 4f
+                     : RingHits(p, 0.6f, BodyRadius() + 0.45f, _groundMask | _blockMask) ? 1.5f : 0f;
+            else cost = RingHits(p, 0.6f, near, _groundMask | _blockMask) ? 1.5f : 0f;
             _wallCost[c] = cost;
             return cost;
         }
@@ -483,9 +524,9 @@ namespace SetsunaAccess
         }
 
         // Slim mode: a fallback plan for narrow doorways the half-metre grid can't fit the full body through.
-        private static bool _slim;
+        private static Mode _mode;
 
-        private static float Radius() { return _slim ? 0.22f : BodyRadius() * 0.85f; }
+        private static float Radius() { return _mode == Mode.Full ? BodyRadius() * 0.85f : 0.22f; }
 
         /// <summary>Walkable in a straight line: nothing in the way at body height, and no steps too big along it.</summary>
         private static bool StraightClear(Vector3 a, Vector3 b)

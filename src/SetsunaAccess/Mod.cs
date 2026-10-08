@@ -25,18 +25,25 @@ namespace SetsunaAccess
             Perf.Begin();
             try { Hotkeys(); }
             catch (Exception ex) { Log.Once("Hotkeys", ex); }
+            Perf.Mark("keys");
             try { Results.Tick(); }
             catch (Exception ex) { Log.Once("Results", ex); }
+            Perf.Mark("Results");
             try { NameEntry.Tick(); }
             catch (Exception ex) { Log.Once("NameEntry", ex); }
+            Perf.Mark("NameEntry");
             try { FrameCap.Tick(); }
             catch (Exception ex) { Log.Once("FrameCap", ex); }
+            Perf.Mark("FrameCap");
             try { Guide.Tick(); }
             catch (Exception ex) { Log.Once("Guide", ex); }
+            Perf.Mark("Guide");
             try { Nav.Tick(); }
             catch (Exception ex) { Log.Once("Nav", ex); }
+            Perf.Mark("Nav");
             try { Field.Tick(); }
             catch (Exception ex) { Log.Once("Field", ex); }
+            Perf.Mark("Field");
             Perf.End();
         }
 
@@ -45,10 +52,13 @@ namespace SetsunaAccess
             Perf.Begin();
             try { Focus.LateTick(); }
             catch (Exception ex) { Log.Once("Focus", ex); }
+            Perf.Mark("Focus");
             try { Narration.LateTick(); }
             catch (Exception ex) { Log.Once("Narration", ex); }
+            Perf.Mark("Narration");
             try { Battle.LateTick(); }
             catch (Exception ex) { Log.Once("Battle", ex); }
+            Perf.Mark("Battle");
             Perf.End();
             Perf.Frame();
         }
@@ -69,6 +79,7 @@ namespace SetsunaAccess
             var now = Time.unscaledTime;
             if (_lastPress.TryGetValue(key, out last) && now - last < 0.15f) return false;
             _lastPress[key] = now;
+            Perf.Key = key.ToString();
             return true;
         }
 

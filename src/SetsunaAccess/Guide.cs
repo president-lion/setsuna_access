@@ -19,7 +19,7 @@ namespace SetsunaAccess
         private static Vector3 _aim;
         private static float _left;
         private static Nav.RouteJob _job;
-        private static int _attempt; // 0 full body, 1 looser goal, 2 slim body
+        private static int _attempt; // 0 full body, 1 looser goal, 2 slim body, 3 lenient (the flood's rules)
 
         /// <summary>A first route is still being worked out (don't call it "no path" yet).</summary>
         public static bool Planning { get { return _job != null && _route == null; } }
@@ -33,46 +33,74 @@ namespace SetsunaAccess
             Finish();
         }
 
-        /// <summary>Finish any pending search now (Home needs an answer straight away).</summary>
-        public static void Complete(Vector3 pos)
+        /// <summary>
+        /// Work on the pending search for up to maxMs now (Home wants an answer quickly). Returns false if it's
+        /// still running; it then carries on a slice per frame, so a long search never freezes the game.
+        /// </summary>
+        public static bool Complete(Vector3 pos, int maxMs)
         {
-            if (_target == null) return;
-            if (_job == null && _route == null) { _job = Nav.StartRoute(pos, _target.position, _goal); _attempt = 0; }
+            if (_target == null) return true;
+            if (_job == null && _route == null) { _attempt = _goodAttempt; _job = StartAttempt(pos, _attempt); }
+            var watch = System.Diagnostics.Stopwatch.StartNew();
             while (_job != null)
             {
-                Nav.StepRoute(_job, 1000);
-                Finish();
+                var left = maxMs - (int)watch.ElapsedMilliseconds;
+                if (left <= 0) return false;
+                if (Nav.StepRoute(_job, left)) Finish();
             }
+            return true;
         }
 
+        /// <summary>Raised when a search finishes (with or without a route).</summary>
+        public static event System.Action Finished;
+
         private static Nav.RouteJob _lastSearch;
+        private static int _goodAttempt;
+
+        // 0: the full body. 1: exits past the walkable edge, a looser goal. 2: a doorway too narrow for the
+        // grid to fit the full body through, a slim body. 3: the way the scanner's flood found (stairs, steps
+        // and ramps the body-width rays read as walls).
+        private static Nav.RouteJob StartAttempt(Vector3 from, int attempt)
+        {
+            switch (attempt)
+            {
+                case 0: return Nav.StartRoute(from, _target.position, _goal);
+                case 1: return Nav.StartRoute(from, _target.position, _goal + 1.5f, 3000);
+                case 2: return Nav.StartRoute(from, _target.position, _goal + 1.5f, 8000, Nav.Mode.Slim);
+                default: return Nav.StartRoute(from, _target.position, _goal + 1.5f, 12000, Nav.Mode.Lenient);
+            }
+        }
 
         private static void Finish()
         {
             _lastSearch = _job;
             var route = Nav.RouteOf(_job);
             var from = _job.From;
-            if (route == null && _attempt < 2)
+            if (route == null && _attempt < 3)
             {
-                NavLog.Line("route attempt " + _attempt + " failed, searched " + _job.Search.Expanded + "/" + _job.Search.Budget);
+                NavLog.Line("route attempt " + _attempt + " failed, searched " + _job.Search.Expanded + "/" + _job.Search.Budget
+                            + "; refused: " + Nav.RouteRefusals());
                 _attempt++;
-                // 1: exits past the walkable edge, try a looser goal. 2: a doorway too narrow for the grid to
-                // fit the full body through, try a slim body.
-                _job = _attempt == 1 ? Nav.StartRoute(from, _target.position, _goal + 1.5f, 3000)
-                                     : Nav.StartRoute(from, _target.position, _goal + 1.5f, 8000, true);
+                _job = StartAttempt(from, _attempt);
                 return;
             }
+            // Re-plans start from whatever worked, so a town that needs the lenient plan doesn't redo three
+            // failing searches every few seconds; a failure starts over from the strictest next time.
+            _goodAttempt = route != null ? _attempt : 0;
             _job = null;
             _route = route;
             _index = 0;
             _aimAt = 0f;
             _replanAt = Time.unscaledTime + (_route != null ? 4f : 5f);
-            var kind = _attempt == 0 ? "full" : _attempt == 1 ? "loose goal" : "slim body";
+            var kind = _attempt == 0 ? "full" : _attempt == 1 ? "loose goal" : _attempt == 2 ? "slim body" : "lenient";
             var searched = _lastSearch == null ? "" : ", searched " + _lastSearch.Search.Expanded + "/" + _lastSearch.Search.Budget;
             NavLog.Line(_route == null
                 ? "no route (" + kind + searched + ") " + NavLog.P(from) + " -> " + _target.name + " " + NavLog.P(_target.position)
                 : "route (" + kind + searched + ") " + _route.Count + " pts, " + Nav.Length(_route, 0).ToString("0.0")
-                  + " m, " + NavLog.P(from) + " -> " + _target.name + " " + NavLog.P(_target.position));
+                  + " m, " + NavLog.P(from) + " -> " + _target.name + " " + NavLog.P(_target.position)
+                  + (_route == null ? "; refused: " + Nav.RouteRefusals() : ""));
+            var done = Finished;
+            if (done != null) done();
         }
 
         public static bool HasRoute { get { return _route != null; } }
@@ -83,6 +111,7 @@ namespace SetsunaAccess
             if (target == _target && Mathf.Approximately(goalRadius, _goal)) return;
             _target = target;
             _goal = goalRadius;
+            _goodAttempt = 0;
             _route = null;
             _job = null;
             _replanAt = 0f;
@@ -107,8 +136,8 @@ namespace SetsunaAccess
 
             if (_job == null && (_route == null ? now >= _replanAt : (now >= _replanAt || Strayed(pos))))
             {
-                _job = Nav.StartRoute(pos, _target.position, _goal);
-                _attempt = 0;
+                _attempt = _goodAttempt;
+                _job = StartAttempt(pos, _attempt);
             }
 
             if (_route == null)
