@@ -140,6 +140,13 @@ namespace SetsunaAccess
             catch (Exception ex) { Log.Once("Speech.Say", ex); }
         }
 
+        /// <summary>Speak even if it repeats the last line (typed letters: the l's in "hello").</summary>
+        public static void SayAlways(string text, bool interrupt = true)
+        {
+            _repeats.Reset();
+            Say(text, interrupt);
+        }
+
         /// <summary>Speaks the last line again, bypassing the repeat filter.</summary>
         public static void Repeat()
         {

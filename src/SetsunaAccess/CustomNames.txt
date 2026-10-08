@@ -1,0 +1,2 @@
+# Built-in names for scanner objects, shipped with the mod. Same format as UserData\SetsunaAccess\names.txt:
+# key, a tab, then the name. Players' names.txt entries get copied here.

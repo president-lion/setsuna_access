@@ -33,7 +33,7 @@ namespace SetsunaAccess
         public const string BeaconOn = "Beacon on.", BeaconOff = "Beacon off.";
         public const string UnknownPlace = "Unknown place.";
         public const string Help =
-            "F1 help. F2 frame rate cap, to lower CPU use. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
+            "F1 help. F2 frame rate cap, to lower CPU use. Control F2 rename the selected scanner object. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
             "Control page up and page down, scanner category. Home, where is the selected object. " +
             "Control home, walk to it; any movement key stops. End, beacon tone toward it. Shift end, show or hide unreachable things. P party status. N story objective, and selects it. T in battle, whose turn it is. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
         public static string DefaultName(string name) { return "Default: " + name; }
@@ -83,6 +83,14 @@ namespace SetsunaAccess
         {
             return "through " + string.Join(", ", route.ToArray());
         }
+        public static string RenamePrompt(string current)
+        {
+            return "Rename " + current + ". Type a name and press Enter. Empty restores the original. Control F2 cancels.";
+        }
+        public static string Renamed(string name) { return "Named " + name + "."; }
+        public const string RenameCleared = "Custom name removed.";
+        public const string RenameCancelled = "Rename cancelled.";
+        public const string Space = "space";
         public const string NoSavePointFound = "No save point found nearby.";
         public const string SavePointHere = "There's a save point in this area.";
 

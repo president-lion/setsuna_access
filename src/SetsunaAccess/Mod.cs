@@ -75,8 +75,15 @@ namespace SetsunaAccess
         private static void Hotkeys()
         {
             var ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            var f2 = Pressed(KeyCode.F2);
+            if (f2 && ctrl)
+            {
+                if (TextEntry.Active) TextEntry.Cancel(); else Field.RenameSelected();
+                return;
+            }
+            if (TextEntry.Active) { TextEntry.Tick(); return; } // typing a name: no other mod keys
             if (Pressed(KeyCode.F1)) Speech.Say(Strings.Help + " " + GameKeys());
-            if (Pressed(KeyCode.F2)) FrameCap.Cycle();
+            if (f2) FrameCap.Cycle();
             if (Pressed(KeyCode.F3)) Speech.Repeat();
             // Z and P are letters: not while a name is being typed.
             var typing = NameEntry.Open || Setsuna.GuiManager.IsInputName;

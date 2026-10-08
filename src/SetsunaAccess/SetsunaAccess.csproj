@@ -21,6 +21,10 @@
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="CustomNames.txt" />
+  </ItemGroup>
+
   <!-- Private=false: the game and the loader supply these, we must not ship copies. -->
   <ItemGroup>
     <!-- MelonLoader 0.5.7: the newest release that boots on Unity 5.2's Mono (see FINDINGS.md). -->

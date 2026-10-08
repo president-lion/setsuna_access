@@ -405,6 +405,35 @@ namespace SetsunaAccess
             return result;
         }
 
+        /// <summary>
+        /// The key a custom name is stored under: map, kind, object name, and for things that don't walk
+        /// around a rounded position too (several chests can share a name).
+        /// </summary>
+        private static string NameKey(Transform t, Kind kind)
+        {
+            var floor = SceneManager.CurrentFloorInfo;
+            var key = (floor == null ? Application.loadedLevelName : floor.id) + "|" + kind + "|" + t.name;
+            if (kind != Kind.Person && kind != Kind.Enemy)
+                key += "|" + Mathf.RoundToInt(t.position.x) + "," + Mathf.RoundToInt(t.position.z);
+            return key;
+        }
+
+        /// <summary>Control F2: type your own name for the selected object (empty = back to the original).</summary>
+        public static void RenameSelected()
+        {
+            if (!InField()) return;
+            if (_selected == null || !_selected.gameObject.activeInHierarchy) { Speech.Say(Strings.NothingSelected); return; }
+            AutoWalk.Stop(null);
+            var key = NameKey(_selected, _selectedKind);
+            var target = _selected;
+            TextEntry.Begin(Strings.RenamePrompt(_selectedName), "", text =>
+            {
+                Names.Set(key, text);
+                if (_selected == target && text.Length > 0) _selectedName = text;
+                Speech.Say(text.Length > 0 ? Strings.Renamed(text) : Strings.RenameCleared);
+            });
+        }
+
         /// <summary>The objective finder selected something in this area: speak it and make it the scanner's selection.</summary>
         public static void SetObjective(Transform target, string name, bool walkInto)
         {
@@ -483,6 +512,8 @@ namespace SetsunaAccess
         private static void Add(List<Target> list, Kind kind, Transform t, string name, Transform player)
         {
             if (t == null || !t.gameObject.activeInHierarchy) return;
+            var custom = Names.Get(NameKey(t, kind));
+            if (custom != null) name = custom;
             var d = t.position - player.position;
             d.y = 0f;
             // The game parks characters it doesn't need yet far outside the map (seen: 14 km).

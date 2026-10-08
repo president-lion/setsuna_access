@@ -224,3 +224,13 @@ av.log`.
   `storyHistory` (records + completion rates, `UpdateHistory`). States: History, LargeContent, SmallContent.
   The mod appends the detail panel text on entry focus, the location panel in the large Location list, and
   the History panel when that state opens.
+
+## Custom scanner names
+
+- Ctrl+F2 renames the selected scanner object via `TextEntry` (Input.inputString; game input blocked by
+  clearing InputManager's isInput*/axis/stick fields after its Update and short-circuiting GetButton*/
+  GetLeftStick/GetRightStick/GetKeyCodeDown, for one extra frame after Enter).
+- Keys: `floorId|Kind|objectName` (+ `|x,z` rounded for things that don't walk). Player file
+  `UserData\SetsunaAccess
+ames.txt`; built-in defaults in embedded `src/SetsunaAccess/CustomNames.txt`
+  (copy players' entries there to ship them).

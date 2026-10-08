@@ -97,6 +97,11 @@ namespace SetsunaAccess
             // Walk-to-object steering.
             Hook(h, typeof(InputManager), "Update", postfix: nameof(Input_After));
 
+            // While the mod's text prompt is open the game must not see any key.
+            foreach (var m in new[] { "GetButtonDown", "GetButtonDownNotCheckPause", "GetButton", "GetButtonUp", "GetLeftStick", "GetRightStick" })
+                Hook(h, typeof(InputManager), m, prefix: nameof(Input_BlockBool));
+            Hook(h, typeof(InputManager), "GetKeyCodeDown", prefix: nameof(Input_BlockKey));
+
             // Field: place banners and arrival.
             Hook(h, typeof(GuiManager), "OpenTelop", prefix: nameof(Telop_Prefix));
             Hook(h, typeof(GuiManager), "OpenTelopWorld", prefix: nameof(Telop_Prefix));
@@ -415,8 +420,23 @@ namespace SetsunaAccess
         private static void Name_Open(UiNameBox __instance) { Guard("Name.Open", () => NameEntry.OnOpen(__instance)); }
         private static void Name_Button(UiNameBox __instance) { Guard("Name.Button", () => NameEntry.OnButton(__instance)); }
 
+        private static bool Input_BlockBool(ref bool __result)
+        {
+            if (!TextEntry.Blocking) return true;
+            __result = false;
+            return false;
+        }
+
+        private static bool Input_BlockKey(ref UnityEngine.KeyCode __result)
+        {
+            if (!TextEntry.Blocking) return true;
+            __result = UnityEngine.KeyCode.None;
+            return false;
+        }
+
         private static void Input_After(InputManager __instance)
         {
+            if (TextEntry.Blocking) Guard("TextEntry", () => TextEntry.ClearGameInput(__instance));
             if (AutoWalk.Active) Guard("AutoWalk", () => AutoWalk.AfterInput(__instance));
         }
 
