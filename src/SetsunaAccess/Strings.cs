@@ -54,6 +54,11 @@ namespace SetsunaAccess
         public static string Distance(int meters) { return meters <= 1 ? "close" : meters + " meters"; }
         public static string Count(int n) { return n == 1 ? "1 thing" : n + " things"; }
         public static string NothingNearby(string category) { return "No " + category.ToLowerInvariant() + " here."; }
+        public const string NoPath = "No walkable path found, pointing straight.";
+        public static string PathInfo(int pathMeters, string direction, int legMeters)
+        {
+            return "Path " + pathMeters + " meters, head " + direction + " for " + System.Math.Max(1, legMeters) + " meters";
+        }
         public const string NoSavePointFound = "No save point found nearby.";
         public const string SavePointHere = "There's a save point in this area.";
 

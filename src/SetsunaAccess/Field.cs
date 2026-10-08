@@ -34,6 +34,7 @@ namespace SetsunaAccess
         private static Kind _selectedKind;
         private static string _lastTelop;
         private static bool _beacon;
+        private static bool _saidNoPath;
         private static float _nextBeep;
 
         // ---- place names ----------------------------------------------------------------
@@ -49,6 +50,7 @@ namespace SetsunaAccess
         public static void OnFloorReady(FloorDataInfo floor)
         {
             AutoWalk.Stop(null);
+            Guide.Clear();
             _selected = null;
             _index = -1;
             var name = floor == null ? "" : TextClean.Clean(floor.mapName);
@@ -99,17 +101,52 @@ namespace SetsunaAccess
             var cur = _selected == null ? -1 : list.FindIndex(t => t.Transform == _selected);
             _index = cur < 0 ? (step > 0 ? 0 : list.Count - 1) : (cur + step + list.Count) % list.Count;
             var t0 = list[_index];
-            _selected = t0.Transform;
-            _selectedName = t0.Name;
-            _selectedKind = t0.Kind;
+            Select(t0.Transform, t0.Name, t0.Kind);
             Speech.Say(Strings.Item(Describe(t0.Name, t0.Transform), _index, list.Count));
         }
 
+        private static void Select(Transform t, string name, Kind kind)
+        {
+            _selected = t;
+            _selectedName = name;
+            _selectedKind = kind;
+            Guide.SetTarget(t, ArriveRadius(kind));
+        }
+
+        /// <summary>Stop where the game lets you interact; walk right into exits.</summary>
+        private static float ArriveRadius(Kind kind)
+        {
+            switch (kind)
+            {
+                case Kind.Person: return 1.6f;
+                case Kind.Chest: return 1.3f;
+                case Kind.SavePoint: return 1.0f;
+                case Kind.Sparkle: return 0.7f;
+                default: return 0.2f;
+            }
+        }
+
+        /// <summary>Home: straight-line direction and distance, then the walkable way there.</summary>
         public static void RepeatSelected()
         {
             if (!InField()) return;
             if (_selected == null || !_selected.gameObject.activeInHierarchy) { Speech.Say(Strings.NothingSelected); return; }
-            Speech.Say(Describe(_selectedName, _selected));
+            var line = Describe(_selectedName, _selected);
+            var player = Player();
+            if (player != null)
+            {
+                Guide.SetTarget(_selected, ArriveRadius(_selectedKind));
+                Vector3 aim;
+                float left;
+                if (Guide.Aim(player.position, out aim, out left))
+                {
+                    Vector2 screen;
+                    var leg = Relative(player.position, aim, out screen);
+                    line += ". " + Strings.PathInfo(Mathf.RoundToInt(left), Strings.Direction(Octant(screen)), Mathf.RoundToInt(leg));
+                }
+                else line += ". " + Strings.NoPath;
+            }
+            Speech.Say(line);
         }
 
         public static void WalkToSelected()
@@ -117,16 +154,8 @@ namespace SetsunaAccess
             if (!InField()) return;
             if (AutoWalk.Active) { AutoWalk.Stop(Strings.WalkCancelled); return; }
             if (_selected == null || !_selected.gameObject.activeInHierarchy) { Speech.Say(Strings.NothingSelected); return; }
-            // Stop where the game lets you interact; walk right into exits.
-            float arrive;
-            switch (_selectedKind)
-            {
-                case Kind.Person: arrive = 1.6f; break;
-                case Kind.Chest: arrive = 1.3f; break;
-                case Kind.SavePoint: arrive = 1.0f; break;
-                case Kind.Sparkle: arrive = 0.7f; break;
-                default: arrive = 0.2f; break;
-            }
+            var arrive = ArriveRadius(_selectedKind);
+            Guide.SetTarget(_selected, arrive);
             AutoWalk.Start(_selected, _selectedName, arrive);
         }
 
@@ -164,6 +193,13 @@ namespace SetsunaAccess
             {
                 Tones.Bump();
                 _nextBump = now + 0.45f;
+                // Teach the route finder about whatever is here, so the beacon stops pointing into it.
+                if (Guide.Target != null && !AutoWalk.Active)
+                {
+                    var right = MainCameraControl.cameraTransform.right; right.y = 0f; right.Normalize();
+                    var fwd = Vector3.Cross(right, Vector3.up).normalized;
+                    Guide.Stuck(leader.position, right * InputManager.Horizontal + fwd * InputManager.Vertical);
+                }
             }
             _bumpSince = now;
             _bumpPos = leader.position;
@@ -179,13 +215,26 @@ namespace SetsunaAccess
 
             var player = Player();
             if (player == null) return;
+            Guide.SetTarget(_selected, ArriveRadius(_selectedKind));
+            Vector3 aim;
+            float left;
+            var routed = Guide.Aim(player.position, out aim, out left);
+            Vector2 toTarget;
+            var straight = Relative(player.position, _selected.position, out toTarget);
+            if (straight <= Mathf.Max(1.5f, ArriveRadius(_selectedKind) + 0.3f))
+            {
+                _nextBeep = Time.unscaledTime + 1.5f;
+                Tones.Beacon(0f, 2f);
+                return;
+            }
+            if (!routed && !_saidNoPath) { _saidNoPath = true; Speech.Say(Strings.NoPath, false); }
+            if (routed) _saidNoPath = false;
+            // Toward the next point on the walkable route: pan left or right, higher pitch when up-screen.
             Vector2 screen;
-            var dist = Relative(player.position, _selected.position, out screen);
-            if (dist < 1.5f) { _nextBeep = Time.unscaledTime + 1.5f; Tones.Beacon(0f, 2f); return; }
-            // Pan by left/right; higher pitch when the object is up-screen, lower when down.
+            Relative(player.position, aim, out screen);
             var dir = screen.normalized;
-            Tones.Beacon(Mathf.Clamp(dir.x, -1f, 1f), Mathf.Lerp(0.75f, 1.35f, (dir.y + 1f) / 2f));
-            _nextBeep = Time.unscaledTime + Mathf.Clamp(dist / 12f, 0.25f, 1.2f);
+            Tones.Beacon(Mathf.Clamp(dir.x, -1f, 1f), Mathf.Lerp(0.75f, 1.35f, (dir.y + 1f) / 2f), !routed);
+            _nextBeep = Time.unscaledTime + Mathf.Clamp(left / 12f, 0.25f, 1.2f);
         }
 
         // ---- helpers --------------------------------------------------------------------
@@ -330,9 +379,7 @@ namespace SetsunaAccess
             if (best != null)
             {
                 _category = 3; // exits
-                _selected = best.transform;
-                _selectedName = Strings.Exit(MapData.FloorName(next));
-                _selectedKind = Kind.Exit;
+                Select(best.transform, Strings.Exit(MapData.FloorName(next)), Kind.Exit);
                 line += " " + Describe(_selectedName, best.transform);
             }
             Speech.Say(line);

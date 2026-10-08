@@ -12,6 +12,7 @@
     <Compile Include="..\..\src\SetsunaAccess\RepeatFilter.cs" Link="Linked\RepeatFilter.cs" />
     <Compile Include="..\..\src\SetsunaAccess\Strings.cs" Link="Linked\Strings.cs" />
     <Compile Include="..\..\src\SetsunaAccess\Cpk.cs" Link="Linked\Cpk.cs" />
+    <Compile Include="..\..\src\SetsunaAccess\GridPath.cs" Link="Linked\GridPath.cs" />
   </ItemGroup>
 
   <ItemGroup>

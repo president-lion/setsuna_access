@@ -144,3 +144,17 @@ state where they already exist; the field code checks the level name contains "_
   `ScenarioMessageData_NormalConversation` by the EventCollision id; none mention shops or houses).
   What identifies a building is who works there: shopkeepers' placement `common.script` is
   `ShopNpc_Item/Magic/Cooking/Accessory`, named with the shop's own title (UI messages SHOP01/00/02/03).
+
+## Route guidance (no navmesh)
+
+- No baked navmesh (`NavMeshLayerName.names` is empty). Characters: rigidbody + capsule, ground snapped by
+  a downward ray on `HitGround` from 1.5 m up (`BaseCharacter.UpdateHeight`); a drop over 0.5 m makes them
+  fall (`OnFall`). Walls are `HitWall` (`BaseObject.wallLayerMask` = HitGround|HitWall); the player also
+  avoids NPC capsules (`PlayerControl.CheckNpcCollision`).
+- `Nav` probes 0.5 m cells lazily: ground ray on HitGround (rise <= 0.5, drop <= 0.45 per cell) and
+  `Physics.CheckCapsule` (party collider size) against HitWall|NPC|Enemy, triggers ignored. `GridPath` = A*
+  (8-way, no corner cutting, 12000 expansions). `Guide` re-plans every 2.5 s or when 2.5 m off the route,
+  aims at the farthest straight-line-clear point (SphereCast + ground continuity), retries with a looser goal
+  for exits past the walkable edge. Bumps and walk-to stalls mark the cell ahead blocked for that scene.
+- Each plan is logged to `UserData\SetsunaAccess
+av.log`.

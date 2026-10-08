@@ -7,7 +7,8 @@ namespace SetsunaAccess
     /// <summary>
     /// Walks the party leader to the scanner's selected object by writing the stick values
     /// InputManager.Update has just computed (horizontal/vertical, camera-relative exactly as
-    /// BaseObject.CreateMoveVec reads them). Straight line with sidestep retries when stuck.
+    /// BaseObject.CreateMoveVec reads them). Follows the Guide's walkable route; when stuck it
+    /// teaches the route finder about the obstacle, re-plans, and sidesteps as a last resort.
     /// Any movement key from the player cancels it.
     /// </summary>
     internal static class AutoWalk
@@ -81,6 +82,15 @@ namespace SetsunaAccess
             d.y = 0f;
             if (d.magnitude <= _arrive) { Stop(Strings.Arrived(_name)); return; }
 
+            // Head for the next point on the walkable route (straight at the target if there is none).
+            Vector3 aim;
+            float left;
+            Guide.SetTarget(_target, _arrive);
+            Guide.Aim(leader.position, out aim, out left);
+            var dir = aim - leader.position;
+            dir.y = 0f;
+            dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : d.normalized;
+
             if (Time.time >= _nextCheck)
             {
                 var moved = leader.position - _lastPos;
@@ -88,16 +98,19 @@ namespace SetsunaAccess
                 if (moved.magnitude < 0.3f)
                 {
                     _stuck++;
-                    if (_stuck > 5) { Stop(Strings.Blocked(_name)); return; }
-                    _detourAngle = (_stuck % 2 == 1 ? 1f : -1f) * (50f + 15f * _stuck);
-                    _detourUntil = Time.time + 0.9f;
+                    if (_stuck > 6) { Stop(Strings.Blocked(_name)); return; }
+                    // Learn the obstacle and re-plan; after a couple of tries also sidestep briefly.
+                    Guide.Stuck(leader.position, dir);
+                    if (_stuck >= 3)
+                    {
+                        _detourAngle = (_stuck % 2 == 1 ? 1f : -1f) * 70f;
+                        _detourUntil = Time.time + 0.7f;
+                    }
                 }
                 else if (Time.time > _detourUntil) _stuck = 0;
                 _lastPos = leader.position;
                 _nextCheck = Time.time + 0.8f;
             }
-
-            var dir = d.normalized;
             if (Time.time < _detourUntil) dir = Quaternion.Euler(0f, _detourAngle, 0f) * dir;
 
             var cam = MainCameraControl.cameraTransform;

@@ -28,7 +28,11 @@ namespace SetsunaAccess
         public static void Bump() { Play(160f, 0.06f, 0f, 0.5f); }
 
         /// <summary>Walking beacon: pan -1..1 (left..right), pitch multiplier.</summary>
-        public static void Beacon(float pan, float pitch) { Play(660f * pitch, 0.07f, pan, 0.35f); }
+        public static void Beacon(float pan, float pitch, bool noRoute = false)
+        {
+            // Without a walkable route the beep drops lower, so a straight-line guess sounds different.
+            Play((noRoute ? 440f : 660f) * pitch, 0.07f, pan, 0.35f);
+        }
 
         private static void Play(float hz, float seconds, float pan, float volume)
         {
