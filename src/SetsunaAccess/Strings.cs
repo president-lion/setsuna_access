@@ -35,7 +35,7 @@ namespace SetsunaAccess
         public const string Help =
             "F1 help. F2 frame rate cap, to lower CPU use. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
             "Control page up and page down, scanner category. Home, where is the selected object. " +
-            "Control home, walk to it; any movement key stops. End, beacon tone toward it. Shift end, show or hide unreachable things. P party status. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
+            "Control home, walk to it; any movement key stops. End, beacon tone toward it. Shift end, show or hide unreachable things. P party status. N story objective, and selects it. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
         public static string DefaultName(string name) { return "Default: " + name; }
         public static string Deleted(string text) { return "deleted " + text; }
         public static string NameChosen(string name) { return name + "."; }
@@ -69,6 +69,19 @@ namespace SetsunaAccess
         {
             var steps = route.Count == 1 ? "1 area away" : route.Count + " areas away";
             return "You can save from the menu on the world map, " + steps + ", through " + string.Join(", ", route.ToArray()) + ". Next:";
+        }
+        public const string ObjectiveSpot = "Objective: a spot to walk to";
+        public const string ObjectiveUnknown = "No objective found here. Try talking to people or moving on.";
+        public const string NextStep = "Next:";
+        public static string ObjectiveTalk(string name) { return "Objective: talk to " + name; }
+        public static string ObjectiveEnemy(string name)
+        {
+            return string.IsNullOrEmpty(name) ? "Objective: fight the monsters" : "Objective: fight " + name;
+        }
+        public static string ObjectiveGoTo(string place) { return "Objective: go to " + place; }
+        public static string Through(System.Collections.Generic.List<string> route)
+        {
+            return "through " + string.Join(", ", route.ToArray());
         }
         public const string NoSavePointFound = "No save point found nearby.";
         public const string SavePointHere = "There's a save point in this area.";

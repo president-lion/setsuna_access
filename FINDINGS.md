@@ -189,3 +189,14 @@ av.log`.
 - Dazzshire Woods flood log: every refused step was "blocked" (body capsule vs HitWall|NPC|Enemy), none for
   slope or ground. The reachability flood now tests a 12 cm capsule and logs the top blocking colliders;
   routes test at most 0.22 m radius.
+
+## Story objective (N)
+
+- `GameFlow` (AES like other params) = 278 entries of `GameFlowInfo` (Pack 2, 96 bytes + flag strings,
+  `dataSize` per entry). Entry applies when `startProgress == EventProgression` (-1 = always).
+  `trigger`: 1 talk (terms = character object name, e.g. NPC_22010 / CP_0002), 2 enter trigger zone
+  (terms = EventCollision id, EC_...), 3 event end, 4 battle end (terms = enemy group id, EBT_...),
+  5 floor in (terms = floor id), 7 battle definitions (battleID set, terms empty).
+- N: candidates at the current progress; found in this area (BaseCharacter name / EventCollision id /
+  EnemyControl.group.id) -> selected for Home/Ctrl+Home/beacon; else BFS over maps (`MapData.PathTo`)
+  for the floor holding it, selecting the first exit. Each lookup is logged to nav.log.

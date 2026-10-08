@@ -11,7 +11,8 @@ namespace SetsunaAccess
     /// </summary>
     internal static class Field
     {
-        private enum Kind { Person, Chest, Exit, SavePoint, Sparkle }
+        // Spot and Enemy are only ever selected by the objective finder (N), never listed by category.
+        private enum Kind { Person, Chest, Exit, SavePoint, Sparkle, Spot, Enemy }
 
         private sealed class Target
         {
@@ -152,6 +153,8 @@ namespace SetsunaAccess
                 case Kind.Chest: return 1.3f;
                 case Kind.SavePoint: return 1.0f;
                 case Kind.Sparkle: return 0.7f;
+                case Kind.Spot: return 0.3f;
+                case Kind.Enemy: return 0.6f;
                 default: return 0.2f;
             }
         }
@@ -390,6 +393,41 @@ namespace SetsunaAccess
                 result.Add(new KeyValuePair<MapJump, string>(j, label));
             }
             return result;
+        }
+
+        /// <summary>The objective finder selected something in this area: speak it and make it the scanner's selection.</summary>
+        public static void SetObjective(Transform target, string name, bool walkInto)
+        {
+            Select(target, name, walkInto ? (name == Strings.ObjectiveSpot ? Kind.Spot : Kind.Enemy) : Kind.Person);
+            Speech.Say(Describe(name, target));
+        }
+
+        /// <summary>The objective is on another map: select the first exit of the route there.</summary>
+        public static void SelectRoute(List<string> path, string line)
+        {
+            var next = path[1];
+            var player = Player();
+            MapJump best = null;
+            var bestD = float.MaxValue;
+            foreach (var j in Object.FindObjectsOfType<MapJump>())
+            {
+                if (!j.gameObject.activeInHierarchy || !string.Equals(j.mapJumpParam.jumpMapName, next, System.StringComparison.OrdinalIgnoreCase)) continue;
+                var d = player == null ? 0f : (j.transform.position - player.position).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = j; }
+            }
+            if (path.Count > 2)
+            {
+                var route = new List<string>();
+                for (var i = 1; i < path.Count; i++) route.Add(MapData.FloorName(path[i]));
+                line += ", " + Strings.Through(route);
+            }
+            if (best != null)
+            {
+                _category = 3; // exits
+                Select(best.transform, Strings.Exit(MapData.FloorName(next)), Kind.Exit);
+                line += ". " + Strings.NextStep + " " + Describe(_selectedName, best.transform);
+            }
+            Speech.Say(line);
         }
 
         /// <summary>L: the closest save point, here or through the exits, and select the way there.</summary>

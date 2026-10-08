@@ -111,6 +111,13 @@ namespace SetsunaAccess
         /// </summary>
         public static List<string> PathToSavePoint(string from, int maxFloors = 200)
         {
+            // The world map lets you save from the menu anywhere (Common.IsEnableSave).
+            return PathTo(from, f => Contents(f).SavePoint || (IsWorldMap(f) && EventManager.EventProgression <= 421010), maxFloors);
+        }
+
+        /// <summary>Breadth-first over exits to the closest floor for which goal is true (path includes from).</summary>
+        public static List<string> PathTo(string from, Func<string, bool> goal, int maxFloors = 200)
+        {
             var prev = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var queue = new Queue<string>();
             prev[from] = null;
@@ -118,8 +125,7 @@ namespace SetsunaAccess
             while (queue.Count > 0 && prev.Count < maxFloors)
             {
                 var cur = queue.Dequeue();
-                // The world map lets you save from the menu anywhere (Common.IsEnableSave).
-                if (Contents(cur).SavePoint || (IsWorldMap(cur) && EventManager.EventProgression <= 421010))
+                if (goal(cur))
                 {
                     var path = new List<string>();
                     for (var f = cur; f != null; f = prev[f]) path.Insert(0, f);
@@ -133,6 +139,42 @@ namespace SetsunaAccess
                 }
             }
             return null;
+        }
+
+        /// <summary>Is someone with this object name (uniqueId) or character id placed on the floor now?</summary>
+        public static bool HasNpc(string floorId, string id)
+        {
+            ObjectPlacementManager.PlacementParameter p;
+            if (!TryPlacement(floorId, out p) || p.npcParameter == null) return false;
+            foreach (var g in p.npcParameter)
+            {
+                if (!Placed(g.npcGroup.common) || g.npcParam == null) continue;
+                foreach (var n in g.npcParam)
+                    if (n.uniqueId == id || n.id == id) return true;
+            }
+            return false;
+        }
+
+        public static bool HasTriggerZone(string floorId, string id)
+        {
+            ObjectPlacementManager.PlacementParameter p;
+            if (!TryPlacement(floorId, out p) || p.eventColliderParameter == null) return false;
+            foreach (var g in p.eventColliderParameter)
+            {
+                if (!Placed(g.eventGroup.common) || g.eventParam == null) continue;
+                foreach (var e in g.eventParam)
+                    if (e.id == id) return true;
+            }
+            return false;
+        }
+
+        public static bool HasEnemyGroup(string floorId, string groupId)
+        {
+            ObjectPlacementManager.PlacementParameter p;
+            if (!TryPlacement(floorId, out p) || p.enemyParameter == null) return false;
+            foreach (var g in p.enemyParameter)
+                if (g.enemyGroup.common.id == groupId && Placed(g.enemyGroup.common)) return true;
+            return false;
         }
 
         public static bool IsWorldMap(string floorId)
