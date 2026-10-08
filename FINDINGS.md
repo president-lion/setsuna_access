@@ -200,3 +200,8 @@ av.log`.
 - N: candidates at the current progress; found in this area (BaseCharacter name / EventCollision id /
   EnemyControl.group.id) -> selected for Home/Ctrl+Home/beacon; else BFS over maps (`MapData.PathTo`)
   for the floor holding it, selecting the first exit. Each lookup is logged to nav.log.
+- Party collider radius is 0.5 m in play (`nav.log`). Routes plan with the leader's real `Capsule` radius x0.85;
+  clearance adds level ray rings at 0.5 m and 1.0 m against HitGround (rock faces, not overhangs); A* adds a
+  cost near walls so routes keep to the middle; fallback plans: looser goal, then slim body (0.22) for doorways.
+  Walk-to slides along walls (SphereCast ahead), backs off 0.35 s when stuck, and ignores a stop press in its
+  first 1.5 s (held Ctrl+Home repeats were stopping it).

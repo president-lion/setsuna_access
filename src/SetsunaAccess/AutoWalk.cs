@@ -24,6 +24,11 @@ namespace SetsunaAccess
         private static int _stuck;
         private static float _detourUntil;
         private static float _detourAngle;
+        private static float _backUntil;
+        private static Vector3 _backDir;
+
+        /// <summary>Seconds since the walk started (a held key's repeat shouldn't count as "stop").</summary>
+        public static float Age { get { return Time.time - _startedAt; } }
 
         private static FieldInfo _h, _v;
 
@@ -98,9 +103,11 @@ namespace SetsunaAccess
                 {
                     _stuck++;
                     if (_stuck > 6) { Stop(Strings.Blocked(_name)); return; }
-                    // Learn the obstacle and re-plan; after a couple of tries also sidestep briefly.
+                    // Learn the obstacle, back off a step, and re-plan; after a couple of tries also sidestep.
                     Nav.LearnFromBump(leader.position, dir);
                     Guide.Stuck(leader.position, dir);
+                    _backDir = dir;
+                    _backUntil = Time.time + 0.35f;
                     if (_stuck >= 3)
                     {
                         _detourAngle = (_stuck % 2 == 1 ? 1f : -1f) * 70f;
@@ -111,7 +118,9 @@ namespace SetsunaAccess
                 _lastPos = leader.position;
                 _nextCheck = Time.time + 0.8f;
             }
-            if (Time.time < _detourUntil) dir = Quaternion.Euler(0f, _detourAngle, 0f) * dir;
+            if (Time.time < _backUntil) dir = -_backDir;                       // backing off a wall
+            else if (Time.time < _detourUntil) dir = Quaternion.Euler(0f, _detourAngle, 0f) * dir;
+            else dir = Nav.Slide(leader.position, dir);                         // slide along walls
 
             var cam = MainCameraControl.cameraTransform;
             var right = cam.right; right.y = 0f; right.Normalize();

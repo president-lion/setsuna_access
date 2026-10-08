@@ -186,7 +186,12 @@ namespace SetsunaAccess
         public static void WalkToSelected()
         {
             if (!InField()) return;
-            if (AutoWalk.Active) { AutoWalk.Stop(Strings.WalkCancelled); return; }
+            if (AutoWalk.Active)
+            {
+                // A held Control+Home repeats; only a deliberate second press stops the walk.
+                if (AutoWalk.Age > 1.5f) AutoWalk.Stop(Strings.WalkCancelled);
+                return;
+            }
             if (_selected == null || !_selected.gameObject.activeInHierarchy) { Speech.Say(Strings.NothingSelected); return; }
             var arrive = ArriveRadius(_selectedKind);
             Guide.SetTarget(_selected, arrive);

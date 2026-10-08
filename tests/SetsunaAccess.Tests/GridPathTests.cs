@@ -148,4 +148,19 @@ public class GridPathTests
         while (!job.Step(5)) { }
         Assert.Null(job.Path);
     }
+
+    [Fact]
+    public void ExtraCostSteersAwayFromCostlyCells()
+    {
+        // Two equal-length lanes (rows 0 and 2); row 0 is "next to a wall" and costs extra.
+        var (s, g, step) = Map(
+            "S....G",
+            "......",
+            "......");
+        var job = new GridPath.SearchJob(new Cell(0, 1), new Cell(5, 1), c => c.Equals(new Cell(5, 1)), step, 6000,
+                                         c => c.Z == 1 ? 5f : 0f);
+        while (!job.Step(50)) { }
+        Assert.NotNull(job.Path);
+        Assert.Contains(job.Path, c => c.Z != 1); // leaves the costly middle row
+    }
 }

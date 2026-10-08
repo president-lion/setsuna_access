@@ -149,6 +149,7 @@ namespace SetsunaAccess
             private readonly Func<Cell, bool> _isGoal;
             private readonly Func<Cell, Cell, bool> _canStep;
             private readonly int _maxExpanded;
+            private readonly Func<Cell, float> _extraCost;
             private readonly MinHeap _open = new MinHeap();
             private readonly Dictionary<Cell, float> _g = new Dictionary<Cell, float>();
             private readonly Dictionary<Cell, Cell> _came = new Dictionary<Cell, Cell>();
@@ -158,9 +159,12 @@ namespace SetsunaAccess
             public bool Done { get; private set; }
             public List<Cell> Path { get; private set; }
 
-            public SearchJob(Cell start, Cell target, Func<Cell, bool> isGoal, Func<Cell, Cell, bool> canStep, int maxExpanded)
+            /// <param name="extraCost">Optional added cost for entering a cell (e.g. hugging a wall), or null.</param>
+            public SearchJob(Cell start, Cell target, Func<Cell, bool> isGoal, Func<Cell, Cell, bool> canStep, int maxExpanded,
+                             Func<Cell, float> extraCost = null)
             {
                 _target = target;
+                _extraCost = extraCost;
                 _isGoal = isGoal;
                 _canStep = canStep;
                 _maxExpanded = maxExpanded;
@@ -187,7 +191,7 @@ namespace SetsunaAccess
                             var diag = dx != 0 && dz != 0;
                             if (diag && (!_canStep(cur, new Cell(cur.X + dx, cur.Z)) || !_canStep(cur, new Cell(cur.X, cur.Z + dz)))) continue;
                             if (!_canStep(cur, next)) continue;
-                            var cost = _g[cur] + (diag ? Diagonal : 1f);
+                            var cost = _g[cur] + (diag ? Diagonal : 1f) + (_extraCost == null ? 0f : _extraCost(next));
                             float old;
                             if (_g.TryGetValue(next, out old) && old <= cost) continue;
                             _g[next] = cost;

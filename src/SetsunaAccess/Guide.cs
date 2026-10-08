@@ -19,7 +19,7 @@ namespace SetsunaAccess
         private static Vector3 _aim;
         private static float _left;
         private static Nav.RouteJob _job;
-        private static bool _jobLoose;
+        private static int _attempt; // 0 full body, 1 looser goal, 2 slim body
 
         /// <summary>A first route is still being worked out (don't call it "no path" yet).</summary>
         public static bool Planning { get { return _job != null && _route == null; } }
@@ -37,7 +37,7 @@ namespace SetsunaAccess
         public static void Complete(Vector3 pos)
         {
             if (_target == null) return;
-            if (_job == null && _route == null) { _job = Nav.StartRoute(pos, _target.position, _goal); _jobLoose = false; }
+            if (_job == null && _route == null) { _job = Nav.StartRoute(pos, _target.position, _goal); _attempt = 0; }
             while (_job != null)
             {
                 Nav.StepRoute(_job, 1000);
@@ -49,11 +49,13 @@ namespace SetsunaAccess
         {
             var route = Nav.RouteOf(_job);
             var from = _job.From;
-            if (route == null && !_jobLoose)
+            if (route == null && _attempt < 2)
             {
-                // e.g. exits past the walkable edge: try again with a looser goal
-                _job = Nav.StartRoute(from, _target.position, _goal + 1.5f, 3000);
-                _jobLoose = true;
+                _attempt++;
+                // 1: exits past the walkable edge, try a looser goal. 2: a doorway too narrow for the grid to
+                // fit the full body through, try a slim body.
+                _job = _attempt == 1 ? Nav.StartRoute(from, _target.position, _goal + 1.5f, 3000)
+                                     : Nav.StartRoute(from, _target.position, _goal + 1.5f, 8000, true);
                 return;
             }
             _job = null;
@@ -99,7 +101,7 @@ namespace SetsunaAccess
             if (_job == null && (_route == null ? now >= _replanAt : (now >= _replanAt || Strayed(pos))))
             {
                 _job = Nav.StartRoute(pos, _target.position, _goal);
-                _jobLoose = false;
+                _attempt = 0;
             }
 
             if (_route == null)

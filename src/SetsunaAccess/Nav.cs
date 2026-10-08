@@ -111,9 +111,15 @@ namespace SetsunaAccess
             public bool Done { get { return Search.Done; } }
         }
 
-        public static RouteJob StartRoute(Vector3 from, Vector3 to, float goalRadius, int budget = 8000)
+        public static RouteJob StartRoute(Vector3 from, Vector3 to, float goalRadius, int budget = 8000, bool slim = false)
         {
             Prepare();
+            if (_slim != slim)
+            {
+                _slim = slim;
+                _clear.Clear();
+                _wallCost.Clear();
+            }
             ExpireClearance();
             var start = ToCell(from);
             _ground[start] = from.y;
@@ -121,7 +127,7 @@ namespace SetsunaAccess
             r2 *= r2;
             var goal = new Vector3(to.x, 0f, to.z);
             System.Func<Cell, bool> isGoal = c => (Center(c, 0f) - goal).sqrMagnitude <= r2;
-            return new RouteJob { Search = new GridPath.SearchJob(start, ToCell(to), isGoal, CanStep, budget), From = from, Goal = goalRadius };
+            return new RouteJob { Search = new GridPath.SearchJob(start, ToCell(to), isGoal, CanStep, budget, WallCost), From = from, Goal = goalRadius };
         }
 
         /// <summary>Advance a route job for up to ms milliseconds; returns true when it has finished.</summary>
@@ -243,6 +249,24 @@ namespace SetsunaAccess
         /// <summary>Forget the reachability fill (scene change, obstacles learned).</summary>
         public static void InvalidateReach() { _reachDirty = true; }
 
+        /// <summary>
+        /// Walk-to steering: if a wall is just ahead in dir, slide along it instead of pushing into it.
+        /// </summary>
+        public static Vector3 Slide(Vector3 pos, Vector3 dir)
+        {
+            Prepare();
+            RaycastHit hit;
+            var r = Radius() * 0.8f;
+            if (!Physics.SphereCast(pos + Vector3.up * 0.6f, r, dir, out hit, 0.6f, _groundMask | _blockMask, QueryTriggerInteraction.Ignore))
+                return dir;
+            var n = hit.normal; n.y = 0f;
+            if (n.sqrMagnitude < 0.01f) return dir;
+            n.Normalize();
+            var slide = dir - n * Vector3.Dot(dir, n);
+            if (slide.sqrMagnitude < 0.05f) slide = Vector3.Cross(Vector3.up, n); // head-on: pick a side
+            return slide.normalized;
+        }
+
         /// <summary>Index of the farthest route point (within lookAhead points) reachable straight from pos.</summary>
         public static int LookAhead(List<Vector3> route, int fromIndex, Vector3 pos, int lookAhead = 24)
         {
@@ -304,6 +328,7 @@ namespace SetsunaAccess
                 _scene = scene;
                 _ground.Clear();
                 _blocked.Clear();
+                _wallCost.Clear();
             }
         }
 
@@ -397,17 +422,70 @@ namespace SetsunaAccess
             var h = Mathf.Max(FieldPartyManager.CollisionHeight, r * 2f + 0.2f);
             var p = Center(c, y);
             ok = !Physics.CheckCapsule(p + Vector3.up * (r + 0.3f), p + Vector3.up * Mathf.Max(h - r, r + 0.31f), r,
-                                       _blockMask, QueryTriggerInteraction.Ignore);
+                                       _blockMask, QueryTriggerInteraction.Ignore)
+                 // Rock faces belong to the ground mesh: short level rays at knee and waist height must not reach
+                 // one within the body's radius. (Overhangs above waist height don't count.)
+                 && !RingHits(p, 0.5f, r, _groundMask) && !RingHits(p, 1.0f, r, _groundMask);
             _clear[c] = ok;
             return ok;
         }
 
-        private static float Radius()
+        private static readonly Vector3[] Ring =
         {
-            // The game's own movement squeezes through gaps narrower than its collider, so routes test slimmer.
-            var r = FieldPartyManager.CollisionRadius;
-            return r > 0.05f && r < 1.5f ? Mathf.Min(r * 0.9f, 0.22f) : 0.22f;
+            new Vector3(1f, 0f, 0f), new Vector3(-1f, 0f, 0f), new Vector3(0f, 0f, 1f), new Vector3(0f, 0f, -1f),
+            new Vector3(0.7071f, 0f, 0.7071f), new Vector3(-0.7071f, 0f, 0.7071f),
+            new Vector3(0.7071f, 0f, -0.7071f), new Vector3(-0.7071f, 0f, -0.7071f)
+        };
+
+        private static bool RingHits(Vector3 floor, float height, float length, int mask)
+        {
+            var o = floor + Vector3.up * height;
+            foreach (var d in Ring)
+                if (Physics.Raycast(o, d, length, mask, QueryTriggerInteraction.Ignore)) return true;
+            return false;
         }
+
+        private static readonly Dictionary<Cell, float> _wallCost = new Dictionary<Cell, float>();
+
+        /// <summary>Extra route cost for cells close to a wall, so routes keep to the middle of paths.</summary>
+        private static float WallCost(Cell c)
+        {
+            float cost;
+            if (_wallCost.TryGetValue(c, out cost)) return cost;
+            float y;
+            if (!_ground.TryGetValue(c, out y) || float.IsNaN(y)) return 0f;
+            var near = Radius() + 0.45f;
+            cost = RingHits(Center(c, y), 0.6f, near, _groundMask | _blockMask) ? 1.5f : 0f;
+            _wallCost[c] = cost;
+            return cost;
+        }
+
+        private static float _bodyRadius = -1f;
+        private static string _bodyScene;
+
+        /// <summary>
+        /// The party leader's real capsule radius in world units (about 0.5 in play). Routes plan with nearly all
+        /// of it: planning slimmer sent walk-to along rock faces it then kept bumping into.
+        /// </summary>
+        public static float BodyRadius()
+        {
+            if (_bodyRadius > 0f && _bodyScene == _scene) return _bodyRadius;
+            var r = 0.4f;
+            var m = FieldPartyManager.Member;
+            var leader = m != null && m.Count > 0 ? m[0] : null;
+            var cap = leader == null ? null : leader.Capsule;
+            if (cap != null) r = cap.radius * Mathf.Max(cap.transform.lossyScale.x, cap.transform.lossyScale.z);
+            else if (FieldPartyManager.CollisionRadius > 0.05f) r = FieldPartyManager.CollisionRadius;
+            _bodyRadius = Mathf.Clamp(r, 0.15f, 0.8f);
+            _bodyScene = _scene;
+            Log.Append("nav.log", "body radius " + _bodyRadius.ToString("0.00"));
+            return _bodyRadius;
+        }
+
+        // Slim mode: a fallback plan for narrow doorways the half-metre grid can't fit the full body through.
+        private static bool _slim;
+
+        private static float Radius() { return _slim ? 0.22f : BodyRadius() * 0.85f; }
 
         /// <summary>Walkable in a straight line: nothing in the way at body height, and no steps too big along it.</summary>
         private static bool StraightClear(Vector3 a, Vector3 b)
