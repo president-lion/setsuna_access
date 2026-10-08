@@ -35,7 +35,7 @@ namespace SetsunaAccess
         public const string Help =
             "F1 help. F2 frame rate cap, to lower CPU use. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
             "Control page up and page down, scanner category. Home, where is the selected object. " +
-            "Control home, walk to it; any movement key stops. End, beacon tone toward it. Shift end, show or hide unreachable things. P party status. N story objective, and selects it. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
+            "Control home, walk to it; any movement key stops. End, beacon tone toward it. Shift end, show or hide unreachable things. P party status. N story objective, and selects it. T in battle, whose turn it is. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
         public static string DefaultName(string name) { return "Default: " + name; }
         public static string Deleted(string text) { return "deleted " + text; }
         public static string NameChosen(string name) { return name + "."; }
@@ -118,6 +118,11 @@ namespace SetsunaAccess
         public static string CountPrice(int count, string price) { return count + ", price " + price; }
         public static string Hp(int now, int max) { return "HP " + now + " of " + max; }
         public static string Mp(int now, int max) { return "MP " + now + " of " + max; }
+        public static string Selecting(string name) { return "Choosing for " + name; }
+        public static string AlsoReady(string names) { return "Also ready: " + names; }
+        public const string NobodyReady = "Nobody is ready";
+        public static string AtbFill(string name, int pct) { return name + " " + pct + " percent"; }
+        public static string MomentumStock(int n) { return "Momentum " + n; }
         public static string Ready(string name) { return name + " ready"; }
         public static string Cost(string cost) { return "Cost " + cost; }
         public static string EnemySkill(string skill) { return "Enemy: " + skill; }

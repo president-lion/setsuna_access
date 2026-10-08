@@ -84,6 +84,7 @@ namespace SetsunaAccess
             if (Pressed(KeyCode.P) && !typing) Field.SayParty();
             if (Pressed(KeyCode.L) && !typing) Field.FindSavePoint();
             if (Pressed(KeyCode.N) && !typing) Objective.Find();
+            if (Pressed(KeyCode.T) && !typing) Battle.SayTurn();
             if (Pressed(KeyCode.V) && !typing)
             {
                 Narration.Enabled = !Narration.Enabled;

@@ -181,6 +181,47 @@ namespace SetsunaAccess
             }
         }
 
+        // ---- T: whose turn ---------------------------------------------------------------
+
+        /// <summary>T in battle: whose command is being chosen, then who else is ready (or everyone's ATB fill).</summary>
+        public static void SayTurn()
+        {
+            if (GameManager.NowGameState != GAME_STATE.BATTLE) return;
+            var win = GuiManager.BattleWindow;
+            var list = BattleManager.BattleCharaList;
+            if (win == null || list == null) return;
+            var now = Reflect.Int(win, "nowPlayerIndex");
+            var parts = new List<string>();
+            var ready = new List<string>();
+            foreach (var c in list)
+            {
+                if (c == null || !c.IsPlayer || !c.IsLive) continue;
+                if (c.battleCharaIndex != now && c.IsActivePlayer) ready.Add(Name(c));
+            }
+            var cur = now >= 0 ? Chara(now) : null;
+            if (cur != null)
+            {
+                var line = Strings.Selecting(Name(cur)) + ", " + Vitals(cur);
+                var stock = cur.atParam.setsunaGaugeStock;
+                if (stock > 0) line += ", " + Strings.MomentumStock(stock);
+                parts.Add(line);
+                if (ready.Count > 0) parts.Add(Strings.AlsoReady(string.Join(", ", ready.ToArray())));
+            }
+            else
+            {
+                parts.Add(Strings.NobodyReady);
+                foreach (var c in list)
+                {
+                    if (c == null || !c.IsPlayer) continue;
+                    if (!c.IsLive) { parts.Add(Name(c) + " " + Strings.KnockedOut); continue; }
+                    var speed = c.charaParam.ActiveSpeed;
+                    var pct = speed > 0f ? Mathf.Clamp(Mathf.RoundToInt(c.atParam.countTime / speed * 100f), 0, 100) : 0;
+                    parts.Add(Strings.AtbFill(Name(c), pct));
+                }
+            }
+            Speech.Say(string.Join(". ", parts.ToArray()));
+        }
+
         // ---- helpers --------------------------------------------------------------------
 
         private static BattleCharacter Chara(int index)
