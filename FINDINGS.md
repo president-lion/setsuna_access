@@ -183,3 +183,9 @@ av.log`.
   flood logs why steps were refused (no ground / rise / drop / blocked / learned).
 - Route planning also runs in slices (`GridPath.SearchJob`, 2 ms/frame via `Guide.Tick`); the old route
   stays in use meanwhile. Home finishes a pending plan immediately (`Guide.Complete`).
+- Layer collision matrix (mainData PhysicsManager): Player collides with Default, Enemy, NPC, Object,
+  HitCollision, HitGround, HitWall (and render layers). Layers: 8 Player, 18 Enemy, 19 NPC, 20 Object,
+  21 HitCollision, 22 HitGround, 23 HitWall.
+- Dazzshire Woods flood log: every refused step was "blocked" (body capsule vs HitWall|NPC|Enemy), none for
+  slope or ground. The reachability flood now tests a 12 cm capsule and logs the top blocking colliders;
+  routes test at most 0.22 m radius.

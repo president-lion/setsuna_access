@@ -203,6 +203,8 @@ namespace SetsunaAccess
             var start = ToCell(player);
             _ground[start] = player.y;
             _whyLearned = _whyNoGround = _whyRise = _whyDrop = _whyBlocked = 0;
+            _blockers.Clear();
+            _thin.Clear();
             _job = new GridPath.FloodJob(start, CanStepLenient, 30000);
             _jobFrom = player;
             _reachDirty = false;
@@ -233,7 +235,9 @@ namespace SetsunaAccess
             _job = null;
             Log.Append("nav.log", "flood " + _reach.Count + " cells, complete=" + _reachComplete + ", radius " + _reachMaxDist.ToString("0")
                                   + "; refused: no ground " + _whyNoGround + ", rise " + _whyRise + ", drop " + _whyDrop
-                                  + ", blocked " + _whyBlocked + ", learned " + _whyLearned);
+                                  + ", blocked " + _whyBlocked + ", learned " + _whyLearned
+                                  + "; party radius " + FieldPartyManager.CollisionRadius.ToString("0.00")
+                                  + "; blockers: " + Blockers());
         }
 
         /// <summary>Forget the reachability fill (scene change, obstacles learned).</summary>
@@ -316,8 +320,44 @@ namespace SetsunaAccess
             if (float.IsNaN(toY)) { _whyNoGround++; return false; }
             if (toY > fromY + MaxRise) { _whyRise++; return false; }
             if (toY < fromY - MaxDrop) { _whyDrop++; return false; }
-            if (!Clear(to, toY)) { _whyBlocked++; return false; }
+            if (!ThinClear(to, toY)) { _whyBlocked++; return false; }
             return true;
+        }
+
+        private static readonly Dictionary<Cell, bool> _thin = new Dictionary<Cell, bool>();
+        private static readonly Dictionary<string, int> _blockers = new Dictionary<string, int>();
+
+        /// <summary>
+        /// Room for anything at all to pass (12 cm capsule): the reachability filter's test. A body-width test
+        /// on a half-metre grid refused the narrow forest gaps the game's own movement slips through.
+        /// </summary>
+        private static bool ThinClear(Cell c, float y)
+        {
+            bool ok;
+            if (_thin.TryGetValue(c, out ok)) return ok;
+            const float r = 0.12f;
+            var h = Mathf.Max(FieldPartyManager.CollisionHeight, 1.2f);
+            var p = Center(c, y);
+            ok = !Physics.CheckCapsule(p + Vector3.up * (r + 0.3f), p + Vector3.up * Mathf.Max(h - r, r + 0.31f), r,
+                                       _blockMask, QueryTriggerInteraction.Ignore);
+            if (!ok && _blockers.Count < 64)
+                foreach (var col in Physics.OverlapSphere(p + Vector3.up * 0.8f, 0.4f, _blockMask))
+                {
+                    if (col == null || col.isTrigger) continue;
+                    var key = col.name + " [" + LayerMask.LayerToName(col.gameObject.layer) + "]";
+                    int n; _blockers.TryGetValue(key, out n); _blockers[key] = n + 1;
+                }
+            _thin[c] = ok;
+            return ok;
+        }
+
+        private static string Blockers()
+        {
+            var list = new List<KeyValuePair<string, int>>(_blockers);
+            list.Sort((a, b) => b.Value.CompareTo(a.Value));
+            var parts = new List<string>();
+            for (var i = 0; i < list.Count && i < 6; i++) parts.Add(list[i].Key + " x" + list[i].Value);
+            return parts.Count == 0 ? "none" : string.Join(", ", parts.ToArray());
         }
 
         // Why flood steps were refused (logged with each finished flood).
@@ -364,8 +404,9 @@ namespace SetsunaAccess
 
         private static float Radius()
         {
+            // The game's own movement squeezes through gaps narrower than its collider, so routes test slimmer.
             var r = FieldPartyManager.CollisionRadius;
-            return r > 0.05f && r < 1.5f ? r * 0.9f : 0.3f;
+            return r > 0.05f && r < 1.5f ? Mathf.Min(r * 0.9f, 0.22f) : 0.22f;
         }
 
         /// <summary>Walkable in a straight line: nothing in the way at body height, and no steps too big along it.</summary>
