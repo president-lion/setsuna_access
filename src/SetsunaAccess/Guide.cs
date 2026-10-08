@@ -87,6 +87,8 @@ namespace SetsunaAccess
             // Re-plans start from whatever worked, so a town that needs the lenient plan doesn't redo three
             // failing searches every few seconds; a failure starts over from the strictest next time.
             _goodAttempt = route != null ? _attempt : 0;
+            if (route == null) _failures++;
+            else { _failures = 0; _hadRoute = true; }
             _job = null;
             _route = route;
             _index = 0;
@@ -104,6 +106,12 @@ namespace SetsunaAccess
         }
 
         public static bool HasRoute { get { return _route != null; } }
+
+        // Every plan, down to the lenient one, found no way: on the first search for this target, or twice
+        // running later (one failure mid-walk can be cells just learned from a bump).
+        private static int _failures;
+        private static bool _hadRoute;
+        public static bool NoRoute { get { return _route == null && (_hadRoute ? _failures >= 2 : _failures >= 1); } }
         public static Transform Target { get { return _target; } }
 
         public static void SetTarget(Transform target, float goalRadius)
@@ -112,6 +120,8 @@ namespace SetsunaAccess
             _target = target;
             _goal = goalRadius;
             _goodAttempt = 0;
+            _failures = 0;
+            _hadRoute = false;
             _route = null;
             _job = null;
             _replanAt = 0f;

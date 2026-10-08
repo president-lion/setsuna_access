@@ -112,6 +112,11 @@ namespace SetsunaAccess
             dir.y = 0f;
             dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : d.normalized;
 
+            if (Guide.NoRoute)
+            {
+                Stop(Strings.NoRouteTo(_name));
+                return;
+            }
             var remaining = left > 0f ? left : d.magnitude;
             if (remaining < _bestLeft - 1f) { _bestLeft = remaining; _bestAt = Time.time; }
             else if (Time.time - _bestAt > 15f && !Guide.Planning)

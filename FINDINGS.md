@@ -198,6 +198,11 @@ mode that last worked. Failed searches now log refusal counts (learned, no groun
 to show which test closes an area off. Walk-to gives up after 15 s without getting 1 m closer. Home waits at
 most 30 ms for a route, then says "Finding the way" and speaks the route when the search finishes.
 perf.log names the slowest part of the mod's frame per 10 s window (and the key, for key presses).
+Follow-up: the lenient plan walked into Serendale's ground-layer barriers (wall1, pCube1/3/4 boxes near
+(28,22) during the monster attack): the 12 cm capsule only tests HitWall/NPC/Enemy. Both the scanner flood and
+the lenient plan now refuse a step when a knee-height line between the cells (cast both ways; mesh faces are
+one-sided) meets a ground-layer face with |normal.y| < 0.35. Upward-facing slopes and bumps don't count.
+Walk-to now stops at once with "No way to X" when every plan fails on the first search (or twice in a row later).
 
 ## Story objective (N)
 

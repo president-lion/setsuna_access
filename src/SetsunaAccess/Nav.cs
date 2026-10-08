@@ -214,7 +214,7 @@ namespace SetsunaAccess
             if (!stale) return;
             var start = ToCell(player);
             _ground[start] = player.y;
-            _whyLearned = _whyNoGround = _whyRise = _whyDrop = _whyBlocked = 0;
+            _whyLearned = _whyNoGround = _whyRise = _whyDrop = _whyBlocked = _whyWall = 0;
             _blockers.Clear();
             _thin.Clear();
             _job = new GridPath.FloodJob(start, CanStepLenient, 30000);
@@ -247,7 +247,7 @@ namespace SetsunaAccess
             _job = null;
             Log.Append("nav.log", "flood from " + NavLog.P(_jobFrom) + ": " + _reach.Count + " cells, complete=" + _reachComplete + ", radius " + _reachMaxDist.ToString("0")
                                   + "; refused: no ground " + _whyNoGround + ", rise " + _whyRise + ", drop " + _whyDrop
-                                  + ", blocked " + _whyBlocked + ", learned " + _whyLearned
+                                  + ", blocked " + _whyBlocked + ", wall " + _whyWall + ", learned " + _whyLearned
                                   + "; party radius " + FieldPartyManager.CollisionRadius.ToString("0.00")
                                   + "; blockers: " + Blockers());
         }
@@ -339,8 +339,8 @@ namespace SetsunaAccess
         }
 
         /// <summary>
-        /// Lenient stepping for the scanner's reachability filter: ground and walls, but not the knee-height
-        /// rock-face line, so the filter only hides things there's truly no way to.
+        /// Lenient stepping for the scanner's reachability filter: ground, walls and upright ground-layer faces,
+        /// but not the strict rock-face rules, so the filter only hides things there's truly no way to.
         /// </summary>
         private static bool CanStepLenient(Cell from, Cell to)
         {
@@ -352,7 +352,32 @@ namespace SetsunaAccess
             if (toY > fromY + MaxRise) { _whyRise++; return false; }
             if (toY < fromY - MaxDrop) { _whyDrop++; return false; }
             if (!ThinClear(to, toY)) { _whyBlocked++; return false; }
+            if (UprightWall(from, fromY, to, toY, true)) { _whyWall++; return false; }
             return true;
+        }
+
+        /// <summary>
+        /// A wall on the ground layer between two cells: a knee-height line between them meets a near-vertical
+        /// face (checked both ways, mesh faces are one-sided). Serendale's barriers (wall1, pCube boxes) are
+        /// ground-layer boxes the thin capsule ignores; sloped ground and bumps have faces that point up, so
+        /// they don't count (the full rock-face rules over-hid paths in Dazzshire Woods).
+        /// </summary>
+        private static bool UprightWall(Cell from, float fromY, Cell to, float toY, bool note)
+        {
+            var a = Center(from, fromY + WallCheckHeight);
+            var b = Center(to, toY + WallCheckHeight);
+            RaycastHit h;
+            if ((Physics.Linecast(a, b, out h, _groundMask, QueryTriggerInteraction.Ignore) && Mathf.Abs(h.normal.y) < 0.35f)
+                || (Physics.Linecast(b, a, out h, _groundMask, QueryTriggerInteraction.Ignore) && Mathf.Abs(h.normal.y) < 0.35f))
+            {
+                if (note && _blockers.Count < 64)
+                {
+                    var key = h.collider.name + " [ground wall]";
+                    int n; _blockers.TryGetValue(key, out n); _blockers[key] = n + 1;
+                }
+                return true;
+            }
+            return false;
         }
 
         private static readonly Dictionary<Cell, bool> _thin = new Dictionary<Cell, bool>();
@@ -392,7 +417,7 @@ namespace SetsunaAccess
         }
 
         // Why flood steps were refused (logged with each finished flood).
-        private static int _whyLearned, _whyNoGround, _whyRise, _whyDrop, _whyBlocked;
+        private static int _whyLearned, _whyNoGround, _whyRise, _whyDrop, _whyBlocked, _whyWall;
 
         // Why route steps were refused: learned, no ground, rise, drop, body/rays, knee line (logged on a failed search).
         private static int[] _whyR = new int[6];
@@ -435,6 +460,7 @@ namespace SetsunaAccess
             if (toY > fromY + MaxRise) { _whyR[2]++; return false; }
             if (toY < fromY - MaxDrop) { _whyR[3]++; return false; }
             if (!ThinClear(to, toY)) { _whyR[4]++; return false; }
+            if (UprightWall(from, fromY, to, toY, false)) { _whyR[5]++; return false; }
             return true;
         }
 
