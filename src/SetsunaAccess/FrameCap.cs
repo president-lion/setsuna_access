@@ -1,20 +1,33 @@
+using System.Collections;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
 using MelonLoader;
 using UnityEngine;
 
 namespace SetsunaAccess
 {
     /// <summary>
-    /// Frame-rate cap to cut the game's CPU use. The game runs vsynced at 60 fps (QualitySettings vSyncCount 1),
-    /// and vsync waiting can keep a CPU core busy; a targetFrameRate cap with vsync off sleeps between frames
-    /// instead. Applied every frame because the game itself sets targetFrameRate = 10 during Momentum
-    /// (UiBattleWindow.OnDecideSetsunaSystem), which only ever did nothing because vsync overrode it.
-    /// F2 cycles 30, 45, 60 and the game's own setting; the choice is saved in MelonPreferences.
+    /// Frame-rate cap to cut the game's CPU use. Unity's own targetFrameRate cap kept the CPU at ~92% in play
+    /// (this Unity waits for the next frame busily), so the mod paces frames itself: vsync off, Unity uncapped,
+    /// and at the end of every frame the main thread sleeps until the next frame is due (with the 1 ms Windows
+    /// timer so the timing stays steady). The game's own targetFrameRate = 10 during Momentum
+    /// (UiBattleWindow.OnDecideSetsunaSystem) is overridden every frame, as vsync always overrode it.
+    /// F2 cycles 30, 45, 60 and the game's own setting; saved in MelonPreferences.
     /// </summary>
     internal static class FrameCap
     {
+        [DllImport("winmm.dll")] private static extern uint timeBeginPeriod(uint ms);
+        [DllImport("winmm.dll")] private static extern uint timeEndPeriod(uint ms);
+
         private static readonly int[] Choices = { 30, 45, 60, 0 }; // 0 = the game's own vsync
         private static MelonPreferences_Entry<int> _entry;
-        private static bool _restored;
+        private static bool _restored, _timerSet, _started;
+        private static readonly Stopwatch _frame = new Stopwatch();
+
+        /// <summary>Main-thread work per frame (frame time minus the sleep), for perf.log.</summary>
+        public static double LastWorkMs { get; private set; }
+        public static double LastSleepMs { get; private set; }
 
         public static void Init()
         {
@@ -31,20 +44,58 @@ namespace SetsunaAccess
             Speech.Say(_entry.Value > 0 ? Strings.FrameCap(_entry.Value) : Strings.FrameCapOff);
         }
 
+        /// <summary>Per frame from OnUpdate: keep vsync and Unity's own cap out of the way.</summary>
         public static void Tick()
         {
+            if (!_started)
+            {
+                _started = true;
+                MelonCoroutines.Start(EndOfFrame());
+            }
             var cap = _entry == null ? 0 : _entry.Value;
             if (cap > 0)
             {
                 if (QualitySettings.vSyncCount != 0) QualitySettings.vSyncCount = 0;
-                if (Application.targetFrameRate != cap) Application.targetFrameRate = cap;
+                if (Application.targetFrameRate != -1) Application.targetFrameRate = -1;
+                if (!_timerSet) { timeBeginPeriod(1); _timerSet = true; }
                 _restored = false;
             }
             else if (!_restored)
             {
                 QualitySettings.vSyncCount = 1;
                 Application.targetFrameRate = -1;
+                if (_timerSet) { timeEndPeriod(1); _timerSet = false; }
                 _restored = true;
+            }
+        }
+
+        /// <summary>After each rendered frame: sleep off whatever is left of this frame's time slice.</summary>
+        private static IEnumerator EndOfFrame()
+        {
+            var wait = new WaitForEndOfFrame();
+            _frame.Start();
+            while (true)
+            {
+                yield return wait;
+                var cap = _entry == null ? 0 : _entry.Value;
+                var work = _frame.Elapsed.TotalMilliseconds;
+                double slept = 0;
+                if (cap > 0)
+                {
+                    var budget = 1000.0 / cap;
+                    var left = budget - work;
+                    if (left > 1.0)
+                    {
+                        var t0 = _frame.Elapsed.TotalMilliseconds;
+                        Thread.Sleep((int)left);
+                        slept = _frame.Elapsed.TotalMilliseconds - t0;
+                    }
+                }
+                LastWorkMs = work;
+                LastSleepMs = slept;
+                Perf.FrameWork(work, slept);
+                _frame.Reset();
+                _frame.Start();
             }
         }
     }

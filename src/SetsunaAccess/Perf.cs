@@ -13,6 +13,17 @@ namespace SetsunaAccess
         private static double _totalMs, _maxMs;
         private static int _frames;
         private static float _since = -1f;
+        private static double _workMs, _workMax, _sleepMs;
+        private static int _workFrames;
+
+        /// <summary>From FrameCap: the whole frame's main-thread work and how long the cap then slept.</summary>
+        public static void FrameWork(double work, double slept)
+        {
+            _workMs += work;
+            _sleepMs += slept;
+            if (work > _workMax) _workMax = work;
+            _workFrames++;
+        }
 
         public static void Begin() { _sw.Reset(); _sw.Start(); }
 
@@ -32,8 +43,13 @@ namespace SetsunaAccess
             if (_since < 0f) { _since = now; return; }
             var span = now - _since;
             if (span < 10f) return;
-            Log.Append("perf.log", "fps " + (_frames / span).ToString("0") + ", mod " + (_totalMs / _frames).ToString("0.00")
-                                   + " ms/frame avg, " + _maxMs.ToString("0.0") + " ms max, level " + Application.loadedLevelName);
+            var wf = System.Math.Max(1, _workFrames);
+            Log.Append("perf.log", "fps " + (_frames / span).ToString("0") + ", game work " + (_workMs / wf).ToString("0.0") + " ms/frame avg ("
+                                   + _workMax.ToString("0") + " max), cap slept " + (_sleepMs / wf).ToString("0.0") + " ms/frame, mod "
+                                   + (_totalMs / _frames).ToString("0.00") + " ms/frame avg, " + _maxMs.ToString("0.0") + " ms max, level "
+                                   + Application.loadedLevelName);
+            _workMs = _workMax = _sleepMs = 0;
+            _workFrames = 0;
             _frames = 0;
             _totalMs = _maxMs = 0;
             _since = now;

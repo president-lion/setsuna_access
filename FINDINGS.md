@@ -234,3 +234,7 @@ av.log`.
   `UserData\SetsunaAccess
 ames.txt`; built-in defaults in embedded `src/SetsunaAccess/CustomNames.txt`
   (copy players' entries there to ship them).
+- Unity's targetFrameRate cap at 30 still left SETSUNA.exe at ~92% CPU. The cap now paces frames itself:
+  vSyncCount 0, targetFrameRate -1, then after WaitForEndOfFrame the main thread Thread.Sleeps the rest of the
+  frame (timeBeginPeriod(1)). perf.log logs main-thread work per frame and the time slept, to tell a busy
+  wait from genuinely heavy frames or other threads.
