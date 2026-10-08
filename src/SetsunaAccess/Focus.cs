@@ -93,6 +93,7 @@ namespace SetsunaAccess
             if (content != null)
             {
                 line = Join(line, WeaponMenu.Compare(content));
+                line = Join(line, FluxMenu.State(content));
                 line = Join(line, RowDescription(content));
             }
             return line;

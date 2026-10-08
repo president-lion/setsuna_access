@@ -189,6 +189,12 @@ namespace SetsunaAccess
         public static string ObjectiveViaSwitch(string what) { return what + ", but you can't walk there yet. Try this switch"; }
         public const string Unstuck = "You were stuck inside the scenery. Moved you back a little.";
         public const string NoRouteTryingStraight = "No known path. Trying straight.";
+        public const string On = "On", Off = "Off";
+        public static string FluxSetting(bool on) { return on ? "set to On" : "set to Off"; }
+        public static string FluxHelp(string confirmKey)
+        {
+            return "Up and down choose a Flux, left and right turn it off or on. " + confirmKey + " adds the ones left on.";
+        }
         public const string NothingForSale = "Nothing for sale.";
 
         // Magic Consortium > Obtain Spritnite.

@@ -77,6 +77,10 @@ namespace SetsunaAccess
             // Empty buy list (e.g. a chef with no recipes yet): the window shows a message instead.
             Hook(h, typeof(UiShopBuyWindow), "Setup_Blank", postfix: nameof(ShopBuy_Blank));
 
+            // After battle: choosing which Fluxes to add.
+            Hook(h, typeof(UiCampContent), "MoveButton", postfix: nameof(Flux_Move));
+            Hook(h, typeof(UiResultWindow), "OpenChackSublimation", postfix: nameof(Flux_Open));
+
             // Shop quantity / price confirmation.
             Hook(h, typeof(UiShopConfirmation), "Open", new[] { typeof(int), typeof(int) }, postfix: nameof(ShopConfirm_Open));
             Hook(h, typeof(UiShopConfirmation), "Update_Number", postfix: nameof(ShopConfirm_Number));
@@ -337,6 +341,12 @@ namespace SetsunaAccess
                 Focus.QueueNext();
             });
         }
+
+        // ---- flux selection -------------------------------------------------------------------
+
+        private static void Flux_Move(UiCampContent __instance) { Guard("Flux.Move", () => FluxMenu.OnMove(__instance)); }
+
+        private static void Flux_Open(bool _isOpen) { Guard("Flux.Open", () => FluxMenu.OnOpen(_isOpen)); }
 
         // ---- spritnite exchange --------------------------------------------------------------
 

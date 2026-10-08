@@ -303,3 +303,9 @@ player-facing ones: people (signboards are NPCs running the CommonSign script, l
 exits, save points, sparkles, "Switches and doors" (GimmickSwitch, DoorControl with open / locked by key item
 gimmickParam.argument1 / opened by switch, AirShipControl), and Enemies (EnemyControl on the field). Event
 colliders stay out of the list (N finds the story one); BGM colliders and cameras are not things to walk to.
+
+Flux selection after battle (UiResultWindow, ResultState.ChackSublimation): rows are UiCampContent with
+resultWindow set; up/down via sub_contentController, left/right call UiCampContent.MoveButton (buttonIndex 1
+= On, default; GetButtonEnable), which calls OnSublimationSelect. Cancel (Cross) applies every row left On
+(HaveItemInfo.Sublimate). The mod speaks the row's setting, On/Off on toggle, and a key hint when
+OpenChackSublimation(true) runs.
