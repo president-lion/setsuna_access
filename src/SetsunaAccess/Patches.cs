@@ -52,6 +52,12 @@ namespace SetsunaAccess
 
             Hook(h, typeof(UiSaveLoadWindow), "Open", postfix: nameof(SaveLoad_Open));
 
+            // Snow Chronicles: entry details, location panel, History page.
+            var sw = typeof(UiCampStoryWindow);
+            Hook(h, sw, "OnSelectSmallContent", postfix: nameof(Story_Entry));
+            Hook(h, sw, "OnSelectLargeContent", postfix: nameof(Story_Large));
+            Hook(h, sw, "SetStoryState", postfix: nameof(Story_State));
+
             // Weapons: equip, upgrade panel, upgrade preview and result.
             var ww = typeof(UiCampWeaponWindow);
             Hook(h, ww, "OnPressContent", postfix: nameof(Weapon_Equip));
@@ -283,6 +289,10 @@ namespace SetsunaAccess
                 if (v != __state) Speech.Say(v);
             });
         }
+
+        private static void Story_Entry(UiCampStoryWindow __instance) { Guard("Story.Entry", () => StoryMenu.OnSelectEntry(__instance)); }
+        private static void Story_Large(UiCampStoryWindow __instance) { Guard("Story.Large", () => StoryMenu.OnSelectLarge(__instance)); }
+        private static void Story_State(UiCampStoryWindow __instance) { Guard("Story.State", () => StoryMenu.OnState(__instance)); }
 
         private static void Weapon_Equip(UiCampWeaponWindow __instance, HaveItemInfo _info)
         {

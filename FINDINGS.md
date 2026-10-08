@@ -216,3 +216,11 @@ av.log`.
   row/tab's own window properties (`campWeaponWindow`, `campSkillWindow`, ...) rather than GetComponentInParent.
 - nav.log now logs map changes, selections, route attempts (full / loose goal / slim body, cells searched vs
   budget), walk start / each stall / end with time and distance, bumps with push direction, flood origin.
+
+## Snow Chronicles
+
+- `UiCampStoryWindow`: category tabs (`UiCampTab.storyType`), large list, small list (both `UiCampContent`
+  rows read by Focus), detail panel `storyAbout` (`UiCampStoryAbout.OnSelectSmallContent`, synchronous),
+  `storyHistory` (records + completion rates, `UpdateHistory`). States: History, LargeContent, SmallContent.
+  The mod appends the detail panel text on entry focus, the location panel in the large Location list, and
+  the History panel when that state opens.
