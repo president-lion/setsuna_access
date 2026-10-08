@@ -4,6 +4,7 @@ namespace SetsunaAccess
     internal static class Strings
     {
         public const string Loaded = "Setsuna Access loaded.";
+        public const string KeysReset = "Key config reset to the default keys.";
         public const string UiDumped = "UI dump written.";
         public const string Delete = "Delete save data";
         public const string Locked = "unavailable";

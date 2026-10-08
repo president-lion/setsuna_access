@@ -458,6 +458,7 @@ namespace SetsunaAccess
         private static void Title_Press(UiTitleMain __instance, bool _active)
         {
             if (!_active) return;
+            Guard("KeyReset", KeyReset.RunIfRequested);
             Guard("Title.Press", () => Speech.Say(TextClean.Clean(Reflect.Get<Text>(__instance, "pressText")?.text)));
         }
 
