@@ -32,6 +32,7 @@ namespace SetsunaAccess
         // get past was bumped forever. Give up when the distance left hasn't improved for a while.
         private static float _bestLeft, _bestAt;
         private static bool _saidStraight;
+        private static int _routeVersion;
 
         /// <summary>Seconds since the walk started (a held key's repeat shouldn't count as "stop").</summary>
         public static float Age { get { return Time.time - _startedAt; } }
@@ -57,6 +58,7 @@ namespace SetsunaAccess
             _travelled = 0f;
             _bestLeft = float.MaxValue;
             _saidStraight = false;
+            _routeVersion = Guide.Version;
             _bestAt = Time.time;
             NavLog.Line("walk start -> " + name + " " + NavLog.P(target.position) + " from " + NavLog.P(_lastPos) + ", arrive within " + arriveRadius.ToString("0.0"));
             Speech.Say(Strings.WalkingTo(name));
@@ -123,6 +125,14 @@ namespace SetsunaAccess
                 Speech.Say(Strings.NoRouteTryingStraight);
             }
             var remaining = left > 0f ? left : d.magnitude;
+            // A new plan measures differently (straight line before the first route, then a longer winding
+            // route): restart the check, or a 150 m route never beat the 34 m straight line it started with.
+            // Only when the new plan is longer: re-plans every few seconds would otherwise hide real stalls.
+            if (Guide.Version != _routeVersion)
+            {
+                _routeVersion = Guide.Version;
+                if (remaining > _bestLeft + 1f) { _bestLeft = remaining; _bestAt = Time.time; }
+            }
             if (remaining < _bestLeft - 1f) { _bestLeft = remaining; _bestAt = Time.time; }
             else if (Time.time - _bestAt > (Guide.NoRoute ? 8f : 15f) && !Guide.Planning)
             {

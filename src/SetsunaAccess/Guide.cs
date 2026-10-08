@@ -106,11 +106,15 @@ namespace SetsunaAccess
                 : "route (" + kind + searched + ") " + _route.Count + " pts, " + Nav.Length(_route, 0).ToString("0.0")
                   + " m, " + NavLog.P(from) + " -> " + _target.name + " " + NavLog.P(_target.position)
                   + (_route == null ? "; refused: " + Nav.RouteRefusals() : ""));
+            Version++;
             var done = Finished;
             if (done != null) done();
         }
 
         public static bool HasRoute { get { return _route != null; } }
+
+        /// <summary>Goes up each time a search finishes, so walk-to can restart its progress check.</summary>
+        public static int Version { get; private set; }
 
         // Every plan, down to the lenient one, found no way: on the first search for this target, or twice
         // running later (one failure mid-walk can be cells just learned from a bump).
