@@ -353,7 +353,86 @@ namespace SetsunaAccess
                 _ground.Clear();
                 _blocked.Clear();
                 _wallCost.Clear();
+                _walked.Clear();
+                _hasWalkPos = false;
+                _walkLogs = 0;
             }
+        }
+
+        // ---- where the player has actually walked ------------------------------------------
+
+        // Cells the leader has stood in this visit. A step between two of them is walkable whatever the
+        // probes say: in Serendale the player ran down a street both the planner and the flood called walled.
+        private static readonly HashSet<Cell> _walked = new HashSet<Cell>();
+        private static Vector3 _walkPos;
+        private static bool _hasWalkPos;
+        private static int _walkLogs;
+
+        /// <summary>Per frame on the field: record the cells the leader passes through.</summary>
+        public static void TrackWalked(Vector3 p)
+        {
+            Prepare();
+            if (_hasWalkPos)
+            {
+                var d = p - _walkPos; d.y = 0f;
+                if (d.sqrMagnitude < 0.04f) return;
+                if (d.magnitude > 3f) { _hasWalkPos = false; } // warped (scene start, event): no line between
+            }
+            if (!_hasWalkPos) { _walkPos = p; _hasWalkPos = true; Walk(ToCell(p), p.y); return; }
+            var from = _walkPos;
+            var flat = p - from; flat.y = 0f;
+            var steps = Mathf.CeilToInt(flat.magnitude / (CellSize * 0.5f));
+            var prev = ToCell(from);
+            for (var i = 1; i <= steps; i++)
+            {
+                var q = Vector3.Lerp(from, p, (float)i / steps);
+                var c = ToCell(q);
+                if (c.Equals(prev)) continue;
+                float prevY;
+                if (!_walked.Contains(c) && _walkLogs < 40 && _ground.TryGetValue(prev, out prevY) && !float.IsNaN(prevY))
+                {
+                    var why = Refusal(prev, prevY, c, q.y);
+                    if (why != null) { _walkLogs++; NavLog.Line("walked a step the probes refuse, at " + NavLog.P(q) + ": " + why); }
+                }
+                Walk(c, q.y);
+                prev = c;
+            }
+            _walkPos = p;
+        }
+
+        private static void Walk(Cell c, float y)
+        {
+            _ground[c] = y;
+            _blocked.Remove(c);
+            if (_walked.Add(c) && _reach != null && !_reach.Contains(c)) _reachDirty = true;
+        }
+
+        private static bool Walked(Cell from, Cell to) { return _walked.Contains(from) && _walked.Contains(to); }
+
+        /// <summary>Why the strict and lenient rules would refuse this step, with the collider in the way (nav.log).</summary>
+        private static string Refusal(Cell from, float fromY, Cell to, float toY)
+        {
+            var parts = new List<string>();
+            var p = Center(to, toY);
+            RaycastHit h;
+            var a = Center(from, fromY + WallCheckHeight);
+            var b = Center(to, toY + WallCheckHeight);
+            if (Physics.Linecast(a, b, out h, _groundMask, QueryTriggerInteraction.Ignore) || Physics.Linecast(b, a, out h, _groundMask, QueryTriggerInteraction.Ignore))
+                parts.Add("knee line hits " + h.collider.name + " (normal y " + h.normal.y.ToString("0.00") + ")");
+            foreach (var height in new[] { 0.5f, 1.0f })
+                foreach (var dir in Ring)
+                    if (Physics.Raycast(p + Vector3.up * height, dir, out h, BodyRadius() * 0.85f, _groundMask, QueryTriggerInteraction.Ignore))
+                    {
+                        parts.Add("ray at " + height.ToString("0.0") + " m hits " + h.collider.name + " " + h.distance.ToString("0.00") + " m away");
+                        goto rays;
+                    }
+            rays:
+            var r = BodyRadius() * 0.85f;
+            var hh = Mathf.Max(FieldPartyManager.CollisionHeight, r * 2f + 0.2f);
+            if (Physics.CheckCapsule(p + Vector3.up * (r + 0.3f), p + Vector3.up * Mathf.Max(hh - r, r + 0.31f), r, _blockMask, QueryTriggerInteraction.Ignore))
+                foreach (var col in Physics.OverlapSphere(p + Vector3.up * 0.9f, r + 0.2f, _blockMask))
+                    parts.Add("body overlaps " + col.name + " [" + LayerMask.LayerToName(col.gameObject.layer) + "]");
+            return parts.Count == 0 ? null : string.Join("; ", parts.ToArray());
         }
 
         /// <summary>
@@ -362,6 +441,7 @@ namespace SetsunaAccess
         /// </summary>
         private static bool CanStepLenient(Cell from, Cell to)
         {
+            if (Walked(from, to)) return true;
             if (_blocked.Contains(to)) { _whyLearned++; return false; }
             float fromY;
             if (!_ground.TryGetValue(from, out fromY) || float.IsNaN(fromY)) return false;
@@ -448,6 +528,7 @@ namespace SetsunaAccess
 
         private static bool CanStep(Cell from, Cell to)
         {
+            if (Walked(from, to)) return true;
             if (_blocked.Contains(to)) { _whyR[0]++; return false; }
             float fromY;
             if (!_ground.TryGetValue(from, out fromY) || float.IsNaN(fromY)) return false;
@@ -470,6 +551,7 @@ namespace SetsunaAccess
         /// </summary>
         private static bool CanStepRoute(Cell from, Cell to)
         {
+            if (Walked(from, to)) return true;
             if (_blocked.Contains(to)) { _whyR[0]++; return false; }
             float fromY;
             if (!_ground.TryGetValue(from, out fromY) || float.IsNaN(fromY)) return false;

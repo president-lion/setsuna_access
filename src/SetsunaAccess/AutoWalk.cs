@@ -31,6 +31,7 @@ namespace SetsunaAccess
         // Progress check: the stuck count resets whenever a sidestep moves the party, so a wall it can't
         // get past was bumped forever. Give up when the distance left hasn't improved for a while.
         private static float _bestLeft, _bestAt;
+        private static bool _saidStraight;
 
         /// <summary>Seconds since the walk started (a held key's repeat shouldn't count as "stop").</summary>
         public static float Age { get { return Time.time - _startedAt; } }
@@ -55,6 +56,7 @@ namespace SetsunaAccess
             _startPos = _lastPos;
             _travelled = 0f;
             _bestLeft = float.MaxValue;
+            _saidStraight = false;
             _bestAt = Time.time;
             NavLog.Line("walk start -> " + name + " " + NavLog.P(target.position) + " from " + NavLog.P(_lastPos) + ", arrive within " + arriveRadius.ToString("0.0"));
             Speech.Say(Strings.WalkingTo(name));
@@ -112,16 +114,19 @@ namespace SetsunaAccess
             dir.y = 0f;
             dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : d.normalized;
 
-            if (Guide.NoRoute)
+            // No plan found a way. The probes have been wrong (Serendale), so try straight at it rather than
+            // refuse; the no-progress check below stops it if it really can't get there.
+            if (Guide.NoRoute && !_saidStraight)
             {
-                Stop(Strings.NoRouteTo(_name));
-                return;
+                _saidStraight = true;
+                NavLog.Line("walk: no route, trying straight");
+                Speech.Say(Strings.NoRouteTryingStraight);
             }
             var remaining = left > 0f ? left : d.magnitude;
             if (remaining < _bestLeft - 1f) { _bestLeft = remaining; _bestAt = Time.time; }
-            else if (Time.time - _bestAt > 15f && !Guide.Planning)
+            else if (Time.time - _bestAt > (Guide.NoRoute ? 8f : 15f) && !Guide.Planning)
             {
-                NavLog.Line("walk: no progress for 15 s, " + remaining.ToString("0.0") + " m left (best " + _bestLeft.ToString("0.0") + ")");
+                NavLog.Line("walk: no progress, " + remaining.ToString("0.0") + " m left (best " + _bestLeft.ToString("0.0") + ")");
                 Stop(Strings.Blocked(_name));
                 return;
             }

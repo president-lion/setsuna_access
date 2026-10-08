@@ -274,3 +274,14 @@ within 3 m, and the walk's last 3.5 m to an exit go straight in without wall sli
 Empty shop lists: UiShopBuyWindow.Setup_Blank shows blankWindow with UiShopBuyType.ToNotMessage() (SHOP73 items, SHOP74 cooking, ...). A chef sells nothing until recipes are learned; the mod now speaks that message.
 
 Reachability on the world map (2026-10-08): the 30000-cell flood ran out about 125 m from the player, so far exits (Morthshaw Woods, 346 m) were Unknown and always shown. Flood cap now 400000 cells on the world map (4 ms slices) and 60000 elsewhere. A complete flood stays valid anywhere inside it: it is only redone when the player leaves it, something is learned, or after 60 s. Incomplete floods keep the old 10 s / 3 m refresh.
+
+Softlock in Serendale (2026-10-08): PlayerControl.WalkUpdate refuses every step while a sphere of 0.9 x
+capsule radius at the capsule centre overlaps any non-sphere HitGround collider, so a leader that ends up inside
+a wall mesh can't move at all. Unstick.cs records the last clear position (every 0.3 s) and, after 2 s of
+pushing without moving while overlapping, moves the leader back and calls PlayerControl.ChangeScene() (snaps
+to ground, resets beforePosition/air state, as on map entry).
+The same session the player ran east along z = 38 from x 17 to 36 with no bump, through what both the planner
+and the flood called walled. Nav now records walked cells (TrackWalked); a step between walked cells is always
+allowed, and the first 40 walked steps the probes would refuse are logged with the collider and test that
+refused them ("walked a step the probes refuse"). Walk-to no longer refuses when no plan works: it says "No
+known path. Trying straight." and stops after 8 s without getting closer.

@@ -242,6 +242,9 @@ namespace SetsunaAccess
             }
             var leader = Player();
             var pushing = InputManager.Horizontal != 0f || InputManager.Vertical != 0f;
+            var members = FieldPartyManager.Member;
+            Unstick.Tick(members != null && members.Count > 0 ? members[0] : null, pushing);
+            if (leader != null) Nav.TrackWalked(leader.position);
             if (leader == null || !pushing) { _bumpSince = -1f; return; }
 
             var now = Time.unscaledTime;

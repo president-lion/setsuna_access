@@ -51,7 +51,6 @@ namespace SetsunaAccess
         public static string WalkingTo(string name) { return "Walking to " + name; }
         public static string Arrived(string name) { return "Arrived at " + name; }
         public static string Blocked(string name) { return "Blocked, can't reach " + name; }
-        public static string NoRouteTo(string name) { return "No way to " + name + " from here. It may be closed off for now."; }
 
         private static readonly string[] Directions = { "up", "up right", "right", "down right", "down", "down left", "left", "up left" };
         public static string Direction(int octant) { return Directions[octant & 7]; }
@@ -169,6 +168,8 @@ namespace SetsunaAccess
             return string.IsNullOrEmpty(target) ? what : target + " " + what;
         }
 
+        public const string Unstuck = "You were stuck inside the scenery. Moved you back a little.";
+        public const string NoRouteTryingStraight = "No known path. Trying straight.";
         public const string NothingForSale = "Nothing for sale.";
 
         // Magic Consortium > Obtain Spritnite.
