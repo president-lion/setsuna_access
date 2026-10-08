@@ -52,9 +52,24 @@ namespace SetsunaAccess
 
             Hook(h, typeof(UiSaveLoadWindow), "Open", postfix: nameof(SaveLoad_Open));
 
+            // Camp menu Settings: speak a row's new value when left/right changes it.
+            Hook(h, typeof(UiCampConfigChoice), "SelectLogic", prefix: nameof(CampConfig_Before), postfix: nameof(CampConfig_After));
+
             // Shop quantity / price confirmation.
             Hook(h, typeof(UiShopConfirmation), "Open", new[] { typeof(int), typeof(int) }, postfix: nameof(ShopConfirm_Open));
             Hook(h, typeof(UiShopConfirmation), "Update_Number", postfix: nameof(ShopConfirm_Number));
+
+            // Cutscene narration (what the Lua event scripts make characters do).
+            var ec = typeof(EventControl);
+            Hook(h, ec, "PlayAnimation", prefix: nameof(Ev_Anim));
+            Hook(h, ec, "CrossFadeAnimation", prefix: nameof(Ev_Anim));
+            Hook(h, ec, "PlayEffectToPosition", prefix: nameof(Ev_Effect));
+            Hook(h, ec, "EnableCharacter", prefix: nameof(Ev_Enable));
+            Hook(h, ec, "FadeCharacter", prefix: nameof(Ev_Fade));
+            Hook(h, ec, "ShakeCamera", prefix: nameof(Ev_Shake));
+            Hook(h, ec, "FadeIn", prefix: nameof(Ev_FadeIn));
+            Hook(h, ec, "MoveCharaToXZ", prefix: nameof(Ev_Move));
+            Hook(h, typeof(UiOpeningMain), "StartCredit", postfix: nameof(Credit_Show));
 
             // Battle results.
             Hook(h, typeof(UiResultWindow), "Open", prefix: nameof(Result_Open));
@@ -246,6 +261,22 @@ namespace SetsunaAccess
             Focus.MessageBar(str);
         }
 
+        private static void CampConfig_Before(UiCampConfigChoice __instance, out string __state)
+        {
+            string v = null;
+            Guard("CampConfig", () => v = ConfigMenu.Value(__instance));
+            __state = v;
+        }
+
+        private static void CampConfig_After(UiCampConfigChoice __instance, string __state)
+        {
+            Guard("CampConfig", () =>
+            {
+                var v = ConfigMenu.Value(__instance);
+                if (v != __state) Speech.Say(v);
+            });
+        }
+
         private static void SaveLoad_Open(UiSaveLoadWindow __instance)
         {
             Guard("SaveLoad", () =>
@@ -282,6 +313,46 @@ namespace SetsunaAccess
         }
 
         // ---- field ----------------------------------------------------------------------
+
+        private static void Ev_Anim(string id, string AnimationName, int typeId)
+        {
+            Guard("Ev.Anim", () => Narration.OnAnimation(id, AnimationName, typeId));
+        }
+
+        private static void Ev_Effect(string effectId, float x, float y, float z)
+        {
+            Guard("Ev.Effect", () => Narration.OnEffectAt(effectId, new UnityEngine.Vector3(x, y, z)));
+        }
+
+        private static void Ev_Enable(string charaId, int val, int typeId)
+        {
+            Guard("Ev.Enable", () => Narration.OnEnable(charaId, val, typeId));
+        }
+
+        private static void Ev_Fade(string charaId, int isFade, int typeId)
+        {
+            Guard("Ev.Fade", () => Narration.OnFade(charaId, isFade, typeId));
+        }
+
+        private static void Ev_FadeIn() { Guard("Ev.FadeIn", Narration.OnFadeIn); }
+
+        private static void Ev_Move(string charaId, float x, float z, int typeId)
+        {
+            Guard("Ev.Move", () => Narration.OnMove(charaId, x, z, typeId));
+        }
+
+        private static void Ev_Shake() { Guard("Ev.Shake", Narration.OnShake); }
+
+        private static void Credit_Show(UiOpeningMain __instance, int id)
+        {
+            Guard("Credit", () =>
+            {
+                var objs = Reflect.Arr(__instance, id >= 100 ? "EndingCreditObjects" : "OpeningCreditObjects");
+                var i = id >= 100 ? id - 100 : id;
+                var go = objs != null && i >= 0 && i < objs.Length ? objs.GetValue(i) as UnityEngine.GameObject : null;
+                if (go != null) Speech.Say(Ui.ReadAll(go.transform), false);
+            });
+        }
 
         private static void Result_Open(UiResultWindow __instance) { Guard("Result", () => Results.OnOpen(__instance)); }
 

@@ -35,6 +35,8 @@ namespace SetsunaAccess
         {
             try { Focus.LateTick(); }
             catch (Exception ex) { Log.Once("Focus", ex); }
+            try { Narration.LateTick(); }
+            catch (Exception ex) { Log.Once("Narration", ex); }
             try { Battle.LateTick(); }
             catch (Exception ex) { Log.Once("Battle", ex); }
         }
@@ -67,6 +69,11 @@ namespace SetsunaAccess
             var typing = NameEntry.Open || Setsuna.GuiManager.IsInputName;
             if (Pressed(KeyCode.Z) && !typing) Field.SayLocation();
             if (Pressed(KeyCode.P) && !typing) Field.SayParty();
+            if (Pressed(KeyCode.V) && !typing)
+            {
+                Narration.Enabled = !Narration.Enabled;
+                Speech.Say(Narration.Enabled ? Strings.NarrationOn : Strings.NarrationOff);
+            }
             if (Pressed(KeyCode.PageUp)) { if (ctrl) Field.NextCategory(-1); else Field.Cycle(-1); }
             if (Pressed(KeyCode.PageDown)) { if (ctrl) Field.NextCategory(1); else Field.Cycle(1); }
             if (Pressed(KeyCode.Home)) { if (ctrl) Field.WalkToSelected(); else Field.RepeatSelected(); }

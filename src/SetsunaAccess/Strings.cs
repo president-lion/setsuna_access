@@ -11,6 +11,14 @@ namespace SetsunaAccess
         public const string NoSaveData = "No save data.";
 
         public const string KnockedOut = "knocked out";
+        public const string ScreenShakes = "The screen shakes.";
+        public const string NarrationOn = "Scene descriptions on.", NarrationOff = "Scene descriptions off.";
+        public static string Nearby(string names) { return "Nearby: " + names + "."; }
+        public static string WalksUpTo(string who, string to) { return who + " walks up to " + to + "."; }
+        public static string WalksAway(string who) { return who + " walks away."; }
+        public static string Appears(string name) { return name + " appears."; }
+        public static string Disappears(string name) { return name + " disappears."; }
+        public static string FadesAway(string name) { return name + " fades away."; }
         public const string GameOver = "Game over.";
 
         // Field scanner.
@@ -24,7 +32,7 @@ namespace SetsunaAccess
         public const string Help =
             "F1 help. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
             "Control page up and page down, scanner category. Home, where is the selected object. " +
-            "Control home, walk to it; any movement key stops. End, beacon tone toward it. P party status. F11 screen text dump.";
+            "Control home, walk to it; any movement key stops. End, beacon tone toward it. P party status. V scene descriptions on or off. F11 screen text dump.";
         public static string DefaultName(string name) { return "Default: " + name; }
         public static string Deleted(string text) { return "deleted " + text; }
         public static string NameChosen(string name) { return name + "."; }
@@ -51,6 +59,8 @@ namespace SetsunaAccess
             return string.IsNullOrEmpty(destination) ? "Exit" : "Exit to " + destination;
         }
 
+        public static string Percent(int p) { return p + " percent"; }
+        public static string Option(int index, int count) { return "option " + (index + 1) + " of " + count; }
         public static string CountPrice(int count, string price) { return count + ", price " + price; }
         public static string Hp(int now, int max) { return "HP " + now + " of " + max; }
         public static string Mp(int now, int max) { return "MP " + now + " of " + max; }

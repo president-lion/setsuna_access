@@ -31,7 +31,10 @@ namespace SetsunaAccess
                 // Auto-advancing screen text shouldn't cut off its own previous page.
                 interrupt = !balloon.IsAuto;
             }
-            Speech.Say(Strings.Line(speaker, text), interrupt);
+            var line = Strings.Line(speaker, text);
+            var lead = Narration.TakePending();
+            if (lead != null) line = lead + " " + line;
+            Speech.Say(line, interrupt);
         }
     }
 }

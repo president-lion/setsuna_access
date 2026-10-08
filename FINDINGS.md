@@ -111,3 +111,18 @@ state where they already exist; the field code checks the level name contains "_
 - Techs / Weapons / Accessories / Spritnite tabs (`UiCampTab`) are face icons with no Text; the tab's
   `parameter` (CharacterParameter) names it. Story tabs use `storyType.ToJapanese()` (localized despite the name).
 - One Page Down showed up as two key-downs ~70 ms apart in play; hotkeys are debounced 150 ms.
+
+## Event scripts and narration
+
+- `research/events/` (not in git): all 392 Lua 5.2 scripts decompiled with unluac
+  (`tools/dl/unluac_src`, built with javac; JDK 21 is installed). Character ids are constants in
+  `CommonModule.lua` (e.g. `KITO = "NPC_10020"`, the first forest's Mysterious Man).
+- Lua helpers wrap C#: `playAnimation` -> `EventControl.CrossFadeAnimation`, `playEmotion(Wait)` ->
+  `PlayEffectToPosition(EMO_*)` above the head, `moveCharaToPosXZ` -> `MoveCharaToXZ`, `fadeInBlack` -> `FadeIn`,
+  `mes(n)` -> `ShowMessage`.
+- Narration hooks those: gestures by animation name, emotion bubbles by effect id (nearest character),
+  EnableCharacter / FadeCharacter appear/vanish (only on a visible screen), walking up to someone or away,
+  camera shake, and "Nearby: ..." when an event fades in from black. Buffered and prefixed to the next
+  dialogue page. V toggles it.
+- Camp Settings rows (`UiCampConfigChoice`): value from `buttonIndex` (label = nearest Text to the highlighted
+  option image) or slider `value`; names from `UiConfigCategory.ToName/ToAbout`.

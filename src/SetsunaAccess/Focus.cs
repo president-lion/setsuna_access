@@ -67,6 +67,8 @@ namespace SetsunaAccess
 
         public static string Describe(UiChoices choice)
         {
+            var cfg = choice as UiCampConfigChoice;
+            if (cfg != null) return ConfigMenu.Describe(cfg);
             var label = Ui.ReadAll(choice.transform);
             if (label.Length == 0 && choice is UiCampTab) label = TabLabel((UiCampTab)choice);
             if (choice.IsLock) label = Join(label, Strings.Locked);
