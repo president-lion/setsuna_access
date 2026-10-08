@@ -175,3 +175,6 @@ av.log`.
   reachable chests). Replaced with a knee-height (0.6 m) `Physics.Linecast` between neighbouring cells, for
   routes only; the scanner filter floods with lenient rules (no rock-face line) so it never over-hides.
 - perf.log in play: mod 0.01-0.05 ms/frame, 60 fps. High CPU is the game, not the mod.
+- Frame cap (F2, MelonPreferences `SetsunaAccess.FrameCap`, default 30): vSyncCount 0 + targetFrameRate,
+  re-applied every frame because `UiBattleWindow.OnDecideSetsunaSystem` sets targetFrameRate = 10 and never
+  restores it (harmless only while vsync is on). 0 restores the game's vsync.

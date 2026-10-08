@@ -16,6 +16,7 @@ namespace SetsunaAccess
             Speech.Preload(MelonUtils.UserLibsDirectory);
             Speech.Init("auto");
             Patches.Apply(new HarmonyLib.Harmony("SetsunaAccess"));
+            FrameCap.Init();
             Speech.Say(Strings.Loaded);
         }
 
@@ -28,6 +29,8 @@ namespace SetsunaAccess
             catch (Exception ex) { Log.Once("Results", ex); }
             try { NameEntry.Tick(); }
             catch (Exception ex) { Log.Once("NameEntry", ex); }
+            try { FrameCap.Tick(); }
+            catch (Exception ex) { Log.Once("FrameCap", ex); }
             try { Nav.Tick(); }
             catch (Exception ex) { Log.Once("Nav", ex); }
             try { Field.Tick(); }
@@ -71,6 +74,7 @@ namespace SetsunaAccess
         {
             var ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
             if (Pressed(KeyCode.F1)) Speech.Say(Strings.Help + " " + GameKeys());
+            if (Pressed(KeyCode.F2)) FrameCap.Cycle();
             if (Pressed(KeyCode.F3)) Speech.Repeat();
             // Z and P are letters: not while a name is being typed.
             var typing = NameEntry.Open || Setsuna.GuiManager.IsInputName;

@@ -4,6 +4,8 @@ namespace SetsunaAccess
     internal static class Strings
     {
         public const string Loaded = "Setsuna Access loaded.";
+        public static string FrameCap(int fps) { return "Frame rate capped at " + fps + "."; }
+        public const string FrameCapOff = "Frame rate: game default.";
         public const string KeysReset = "Key config reset to the default keys.";
         public const string UiDumped = "UI dump written.";
         public const string Delete = "Delete save data";
@@ -31,7 +33,7 @@ namespace SetsunaAccess
         public const string BeaconOn = "Beacon on.", BeaconOff = "Beacon off.";
         public const string UnknownPlace = "Unknown place.";
         public const string Help =
-            "F1 help. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
+            "F1 help. F2 frame rate cap, to lower CPU use. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
             "Control page up and page down, scanner category. Home, where is the selected object. " +
             "Control home, walk to it; any movement key stops. End, beacon tone toward it. Shift end, show or hide unreachable things. P party status. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
         public static string DefaultName(string name) { return "Default: " + name; }
