@@ -18,6 +18,53 @@ namespace SetsunaAccess
         private static float _replanAt, _aimAt;
         private static Vector3 _aim;
         private static float _left;
+        private static Nav.RouteJob _job;
+        private static bool _jobLoose;
+
+        /// <summary>A first route is still being worked out (don't call it "no path" yet).</summary>
+        public static bool Planning { get { return _job != null && _route == null; } }
+
+        /// <summary>Per frame: work on the pending route search for at most ~2 ms.</summary>
+        public static void Tick()
+        {
+            if (_job == null) return;
+            if (_target == null) { _job = null; return; }
+            if (!Nav.StepRoute(_job, 2)) return;
+            Finish();
+        }
+
+        /// <summary>Finish any pending search now (Home needs an answer straight away).</summary>
+        public static void Complete(Vector3 pos)
+        {
+            if (_target == null) return;
+            if (_job == null && _route == null) { _job = Nav.StartRoute(pos, _target.position, _goal); _jobLoose = false; }
+            while (_job != null)
+            {
+                Nav.StepRoute(_job, 1000);
+                Finish();
+            }
+        }
+
+        private static void Finish()
+        {
+            var route = Nav.RouteOf(_job);
+            var from = _job.From;
+            if (route == null && !_jobLoose)
+            {
+                // e.g. exits past the walkable edge: try again with a looser goal
+                _job = Nav.StartRoute(from, _target.position, _goal + 1.5f, 3000);
+                _jobLoose = true;
+                return;
+            }
+            _job = null;
+            _route = route;
+            _index = 0;
+            _aimAt = 0f;
+            _replanAt = Time.unscaledTime + (_route != null ? 4f : 5f);
+            Log.Append("nav.log", _route == null
+                ? "no route " + Fmt(from) + " -> " + _target.name + " " + Fmt(_target.position)
+                : "route " + _route.Count + " pts, " + Nav.Length(_route, 0).ToString("0.0") + " m, " + Fmt(from) + " -> " + _target.name);
+        }
 
         public static bool HasRoute { get { return _route != null; } }
         public static Transform Target { get { return _target; } }
@@ -28,14 +75,15 @@ namespace SetsunaAccess
             _target = target;
             _goal = goalRadius;
             _route = null;
+            _job = null;
             _replanAt = 0f;
             _aimAt = 0f;
         }
 
-        public static void Clear() { _target = null; _route = null; }
+        public static void Clear() { _target = null; _route = null; _job = null; }
 
         /// <summary>Force a re-plan, e.g. after the scene changed.</summary>
-        public static void Invalidate() { _route = null; _replanAt = 0f; _aimAt = 0f; }
+        public static void Invalidate() { _replanAt = 0f; _aimAt = 0f; }
 
         /// <summary>
         /// Where to head from pos right now. Returns false when there's no route (aim = the target itself).
@@ -48,16 +96,10 @@ namespace SetsunaAccess
             if (_target == null) return false;
             var now = Time.unscaledTime;
 
-            if (_route == null ? now >= _replanAt : (now >= _replanAt || Strayed(pos)))
+            if (_job == null && (_route == null ? now >= _replanAt : (now >= _replanAt || Strayed(pos))))
             {
-                _route = Nav.FindRoute(pos, _target.position, _goal)
-                      ?? Nav.FindRoute(pos, _target.position, _goal + 1.5f, 3000); // e.g. exits past the walkable edge
-                _index = 0;
-                _replanAt = now + (_route != null ? 4f : 5f);
-                Log.Append("nav.log", _route == null
-                    ? "no route " + Fmt(pos) + " -> " + _target.name + " " + Fmt(_target.position)
-                    : "route " + _route.Count + " pts, " + Nav.Length(_route, 0).ToString("0.0") + " m, " + Fmt(pos) + " -> " + _target.name);
-                _aimAt = 0f;
+                _job = Nav.StartRoute(pos, _target.position, _goal);
+                _jobLoose = false;
             }
 
             if (_route == null)

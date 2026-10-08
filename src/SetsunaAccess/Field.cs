@@ -166,6 +166,7 @@ namespace SetsunaAccess
             if (player != null)
             {
                 Guide.SetTarget(_selected, ArriveRadius(_selectedKind));
+                Guide.Complete(player.position);
                 Vector3 aim;
                 float left;
                 if (Guide.Aim(player.position, out aim, out left))
@@ -259,13 +260,13 @@ namespace SetsunaAccess
                 Tones.Beacon(0f, 2f);
                 return;
             }
-            if (!routed && !_saidNoPath) { _saidNoPath = true; Speech.Say(Strings.NoPath, false); }
+            if (!routed && !Guide.Planning && !_saidNoPath) { _saidNoPath = true; Speech.Say(Strings.NoPath, false); }
             if (routed) _saidNoPath = false;
             // Toward the next point on the walkable route: pan left or right, higher pitch when up-screen.
             Vector2 screen;
             Relative(player.position, aim, out screen);
             var dir = screen.normalized;
-            Tones.Beacon(Mathf.Clamp(dir.x, -1f, 1f), Mathf.Lerp(0.75f, 1.35f, (dir.y + 1f) / 2f), !routed);
+            Tones.Beacon(Mathf.Clamp(dir.x, -1f, 1f), Mathf.Lerp(0.75f, 1.35f, (dir.y + 1f) / 2f), !routed && !Guide.Planning);
             _nextBeep = Time.unscaledTime + Mathf.Clamp(left / 12f, 0.25f, 1.2f);
         }
 

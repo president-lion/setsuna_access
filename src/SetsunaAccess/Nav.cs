@@ -17,7 +17,10 @@ namespace SetsunaAccess
     internal static class Nav
     {
         public const float CellSize = 0.5f;
-        private const float MaxRise = 0.5f, MaxDrop = 0.45f;
+        // Per half-metre cell. The game only drops you when the ground falls over 0.5 m within one frame
+        // of movement (BaseCharacter.UpdateHeight), and pushes you up slopes physically, so hills are fine;
+        // only real ledges and cliffs exceed these.
+        private const float MaxRise = 0.8f, MaxDrop = 1.0f;
         // Height of the thin wall check between cells: ground-layer geometry crossing it is a rock face.
         private const float WallCheckHeight = 0.6f;
 
@@ -99,6 +102,53 @@ namespace SetsunaAccess
             return pts;
         }
 
+        /// <summary>A route search that runs in slices; see Guide.</summary>
+        public sealed class RouteJob
+        {
+            internal GridPath.SearchJob Search;
+            internal Vector3 From;
+            public float Goal;
+            public bool Done { get { return Search.Done; } }
+        }
+
+        public static RouteJob StartRoute(Vector3 from, Vector3 to, float goalRadius, int budget = 8000)
+        {
+            Prepare();
+            ExpireClearance();
+            var start = ToCell(from);
+            _ground[start] = from.y;
+            var r2 = Mathf.Max(goalRadius, CellSize * 1.5f);
+            r2 *= r2;
+            var goal = new Vector3(to.x, 0f, to.z);
+            System.Func<Cell, bool> isGoal = c => (Center(c, 0f) - goal).sqrMagnitude <= r2;
+            return new RouteJob { Search = new GridPath.SearchJob(start, ToCell(to), isGoal, CanStep, budget), From = from, Goal = goalRadius };
+        }
+
+        /// <summary>Advance a route job for up to ms milliseconds; returns true when it has finished.</summary>
+        public static bool StepRoute(RouteJob job, int ms)
+        {
+            _watch.Reset();
+            _watch.Start();
+            while (!job.Search.Done && _watch.ElapsedMilliseconds < ms) job.Search.Step(30);
+            _watch.Stop();
+            return job.Search.Done;
+        }
+
+        /// <summary>The finished job's route as world points (first = start), or null.</summary>
+        public static List<Vector3> RouteOf(RouteJob job)
+        {
+            var cells = job.Search.Path;
+            if (cells == null) return null;
+            var pts = new List<Vector3>(cells.Count);
+            foreach (var c in cells)
+            {
+                float y;
+                pts.Add(Center(c, _ground.TryGetValue(c, out y) && !float.IsNaN(y) ? y : job.From.y));
+            }
+            pts[0] = job.From;
+            return pts;
+        }
+
         // ---- reachability (scanner filter) -------------------------------------------------
 
         // Last finished flood and the one running in the background (a slice per frame, see Tick).
@@ -152,6 +202,7 @@ namespace SetsunaAccess
             if (!stale) return;
             var start = ToCell(player);
             _ground[start] = player.y;
+            _whyLearned = _whyNoGround = _whyRise = _whyDrop = _whyBlocked = 0;
             _job = new GridPath.FloodJob(start, CanStepLenient, 30000);
             _jobFrom = player;
             _reachDirty = false;
@@ -180,7 +231,9 @@ namespace SetsunaAccess
                 if (d.magnitude > _reachMaxDist) _reachMaxDist = d.magnitude;
             }
             _job = null;
-            Log.Append("nav.log", "flood " + _reach.Count + " cells, complete=" + _reachComplete + ", radius " + _reachMaxDist.ToString("0"));
+            Log.Append("nav.log", "flood " + _reach.Count + " cells, complete=" + _reachComplete + ", radius " + _reachMaxDist.ToString("0")
+                                  + "; refused: no ground " + _whyNoGround + ", rise " + _whyRise + ", drop " + _whyDrop
+                                  + ", blocked " + _whyBlocked + ", learned " + _whyLearned);
         }
 
         /// <summary>Forget the reachability fill (scene change, obstacles learned).</summary>
@@ -256,13 +309,19 @@ namespace SetsunaAccess
         /// </summary>
         private static bool CanStepLenient(Cell from, Cell to)
         {
-            if (_blocked.Contains(to)) return false;
+            if (_blocked.Contains(to)) { _whyLearned++; return false; }
             float fromY;
             if (!_ground.TryGetValue(from, out fromY) || float.IsNaN(fromY)) return false;
             var toY = Ground(to, fromY);
-            if (float.IsNaN(toY) || toY > fromY + MaxRise || toY < fromY - MaxDrop) return false;
-            return Clear(to, toY);
+            if (float.IsNaN(toY)) { _whyNoGround++; return false; }
+            if (toY > fromY + MaxRise) { _whyRise++; return false; }
+            if (toY < fromY - MaxDrop) { _whyDrop++; return false; }
+            if (!Clear(to, toY)) { _whyBlocked++; return false; }
+            return true;
         }
+
+        // Why flood steps were refused (logged with each finished flood).
+        private static int _whyLearned, _whyNoGround, _whyRise, _whyDrop, _whyBlocked;
 
         private static bool CanStep(Cell from, Cell to)
         {

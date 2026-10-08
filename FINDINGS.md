@@ -178,3 +178,8 @@ av.log`.
 - Frame cap (F2, MelonPreferences `SetsunaAccess.FrameCap`, default 30): vSyncCount 0 + targetFrameRate,
   re-applied every frame because `UiBattleWindow.OnDecideSetsunaSystem` sets targetFrameRate = 10 and never
   restores it (harmless only while vsync is on). 0 restores the game's vsync.
+- Slope limits per 0.5 m cell are now rise 0.8 / drop 1.0 (the game only drops you for >0.5 m in one
+  frame of movement and pushes up slopes physically); 0.5/0.45 boxed the woods' hills in. Each finished
+  flood logs why steps were refused (no ground / rise / drop / blocked / learned).
+- Route planning also runs in slices (`GridPath.SearchJob`, 2 ms/frame via `Guide.Tick`); the old route
+  stays in use meanwhile. Home finishes a pending plan immediately (`Guide.Complete`).

@@ -121,4 +121,31 @@ public class GridPathTests
         Assert.Equal(complete, job.Complete);
         Assert.True(whole.SetEquals(job.Seen));
     }
+
+    [Fact]
+    public void SearchJobInSlicesMatchesFind()
+    {
+        var (s, g, step) = Map(
+            "S.#......",
+            "..#..##..",
+            "..#..#...",
+            ".....#..G");
+        var whole = GridPath.Find(s, g, c => c.Equals(g), step);
+        var job = new GridPath.SearchJob(s, g, c => c.Equals(g), step, 6000);
+        var slices = 0;
+        while (!job.Step(1)) slices++;
+        Assert.True(slices > 1);
+        Assert.NotNull(job.Path);
+        Assert.Equal(GridPath.Length(whole), GridPath.Length(job.Path), 3);
+        Assert.Equal(g, job.Path[^1]);
+    }
+
+    [Fact]
+    public void SearchJobReportsNoPath()
+    {
+        var (s, g, step) = Map("S#G");
+        var job = new GridPath.SearchJob(s, g, c => c.Equals(g), step, 6000);
+        while (!job.Step(5)) { }
+        Assert.Null(job.Path);
+    }
 }

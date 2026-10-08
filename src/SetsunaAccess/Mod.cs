@@ -31,6 +31,8 @@ namespace SetsunaAccess
             catch (Exception ex) { Log.Once("NameEntry", ex); }
             try { FrameCap.Tick(); }
             catch (Exception ex) { Log.Once("FrameCap", ex); }
+            try { Guide.Tick(); }
+            catch (Exception ex) { Log.Once("Guide", ex); }
             try { Nav.Tick(); }
             catch (Exception ex) { Log.Once("Nav", ex); }
             try { Field.Tick(); }

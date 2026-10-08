@@ -139,6 +139,66 @@ namespace SetsunaAccess
             }
         }
 
+        /// <summary>
+        /// A* that runs a slice at a time (so planning never stalls a frame). Same rules as Find.
+        /// When Done, Path holds the result or null.
+        /// </summary>
+        public sealed class SearchJob
+        {
+            private readonly Cell _target;
+            private readonly Func<Cell, bool> _isGoal;
+            private readonly Func<Cell, Cell, bool> _canStep;
+            private readonly int _maxExpanded;
+            private readonly MinHeap _open = new MinHeap();
+            private readonly Dictionary<Cell, float> _g = new Dictionary<Cell, float>();
+            private readonly Dictionary<Cell, Cell> _came = new Dictionary<Cell, Cell>();
+            private readonly HashSet<Cell> _closed = new HashSet<Cell>();
+            private int _expanded;
+
+            public bool Done { get; private set; }
+            public List<Cell> Path { get; private set; }
+
+            public SearchJob(Cell start, Cell target, Func<Cell, bool> isGoal, Func<Cell, Cell, bool> canStep, int maxExpanded)
+            {
+                _target = target;
+                _isGoal = isGoal;
+                _canStep = canStep;
+                _maxExpanded = maxExpanded;
+                _g[start] = 0f;
+                _open.Push(start, H(start, target));
+            }
+
+            public bool Step(int maxExpand)
+            {
+                while (!Done && maxExpand-- > 0)
+                {
+                    if (_open.Count == 0 || _expanded > _maxExpanded) { Done = true; break; }
+                    var cur = _open.Pop();
+                    if (_closed.Contains(cur)) continue;
+                    if (_isGoal(cur)) { Path = Rebuild(_came, cur); Done = true; break; }
+                    _closed.Add(cur);
+                    _expanded++;
+                    for (var dx = -1; dx <= 1; dx++)
+                        for (var dz = -1; dz <= 1; dz++)
+                        {
+                            if (dx == 0 && dz == 0) continue;
+                            var next = new Cell(cur.X + dx, cur.Z + dz);
+                            if (_closed.Contains(next)) continue;
+                            var diag = dx != 0 && dz != 0;
+                            if (diag && (!_canStep(cur, new Cell(cur.X + dx, cur.Z)) || !_canStep(cur, new Cell(cur.X, cur.Z + dz)))) continue;
+                            if (!_canStep(cur, next)) continue;
+                            var cost = _g[cur] + (diag ? Diagonal : 1f);
+                            float old;
+                            if (_g.TryGetValue(next, out old) && old <= cost) continue;
+                            _g[next] = cost;
+                            _came[next] = cur;
+                            _open.Push(next, cost + H(next, _target));
+                        }
+                }
+                return Done;
+            }
+        }
+
         /// <summary>Octile distance.</summary>
         public static float H(Cell a, Cell b)
         {
