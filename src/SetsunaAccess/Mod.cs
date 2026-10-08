@@ -100,6 +100,7 @@ namespace SetsunaAccess
             var typing = NameEntry.Open || Setsuna.GuiManager.IsInputName;
             if (Pressed(KeyCode.Z) && !typing) Field.SayLocation();
             if (Pressed(KeyCode.P) && !typing) Field.SayParty();
+            if (Pressed(KeyCode.G) && !typing) SayGold();
             if (Pressed(KeyCode.L) && !typing) Field.FindSavePoint();
             if (Pressed(KeyCode.N) && !typing) Objective.Find();
             if (Pressed(KeyCode.T) && !typing) Battle.SayTurn();
@@ -121,6 +122,14 @@ namespace SetsunaAccess
                 Log.Info("UiDump", UiDump.Write());
                 Speech.Say(Strings.UiDumped);
             }
+        }
+
+        private static void SayGold()
+        {
+            // Only once a save is running: Boot, Logo and Title have no money to read.
+            var level = Application.loadedLevelName;
+            if (!level.Contains("_")) { Speech.Say(Strings.NoGameLoaded); return; }
+            Speech.Say(Strings.Gold(Setsuna.Common.GetMoney()));
         }
 
         /// <summary>The game's own keys as currently bound (Key Config can change them).</summary>

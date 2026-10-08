@@ -35,7 +35,7 @@ namespace SetsunaAccess
         public const string Help =
             "F1 help. F2 frame rate cap, to lower CPU use. Control F2 rename the selected scanner object. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
             "Control page up and page down, scanner category. Home, where is the selected object. " +
-            "Control home, walk to it; any movement key stops. End, beacon tone toward it. Shift end, show or hide unreachable things. P party status. N story objective, and selects it. T in battle, whose turn it is. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
+            "Control home, walk to it; any movement key stops. End, beacon tone toward it. Shift end, show or hide unreachable things. P party status. G gold. N story objective, and selects it. T in battle, whose turn it is. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
         public static string DefaultName(string name) { return "Default: " + name; }
         public static string Deleted(string text) { return "deleted " + text; }
         public static string NameChosen(string name) { return name + "."; }
@@ -62,6 +62,8 @@ namespace SetsunaAccess
         public const string FilterOff = "Showing everything, reachable or not.";
         public static string HiddenUnreachable(int n) { return n + " unreachable hidden"; }
         public const string NoPath = "No walkable path found, pointing straight.";
+        public static string Gold(uint n) { return n + " gold"; }
+        public const string NoGameLoaded = "No game loaded.";
         public const string FindingWay = "Finding the way.";
         public static string PathInfo(int pathMeters, string direction, int legMeters)
         {
