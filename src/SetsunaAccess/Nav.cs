@@ -270,6 +270,29 @@ namespace SetsunaAccess
                                   + "; blockers: " + Blockers());
         }
 
+        /// <summary>
+        /// nav.log: the ground and wall colliders the game adds at run time (bridges, ramps, barriers such as
+        /// Serendale's pCube boxes), which aren't in the scene files and so can't be checked offline.
+        /// </summary>
+        public static void LogExtraColliders()
+        {
+            Prepare();
+            var n = 0;
+            foreach (var c in Object.FindObjectsOfType<Collider>())
+            {
+                if (c == null || c.isTrigger || !c.enabled || !c.gameObject.activeInHierarchy) continue;
+                var bit = 1 << c.gameObject.layer;
+                if (((_groundMask | _blockMask) & bit) == 0 || c.gameObject.layer == LayerMask.NameToLayer("NPC") || c.gameObject.layer == LayerMask.NameToLayer("Enemy")) continue;
+                if (c is MeshCollider && (c.name == "MergedCollider" || c.name == "HitGround" || c.name == "HitWall")) continue;
+                var b = c.bounds;
+                var parent = c.transform.parent == null ? "" : c.transform.parent.name + "/";
+                NavLog.Line("collider: " + parent + c.name + " " + c.GetType().Name + " [" + LayerMask.LayerToName(c.gameObject.layer) + "] centre "
+                            + NavLog.P(b.center) + " size " + NavLog.P(b.size) + " top " + b.max.y.ToString("0.0"));
+                if (++n >= 60) { NavLog.Line("collider: (more not listed)"); break; }
+            }
+            if (n == 0) NavLog.Line("collider: no extra ground or wall colliders");
+        }
+
         /// <summary>The ground itself changed (a bridge lowered): drop everything probed on this map.</summary>
         public static void ForgetGeometry()
         {

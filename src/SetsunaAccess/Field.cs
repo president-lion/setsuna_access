@@ -54,6 +54,7 @@ namespace SetsunaAccess
         public static void OnFloorReady(FloorDataInfo floor)
         {
             if (floor != null) NavLog.Line("map: " + TextClean.Clean(floor.mapName) + " (" + floor.id + ", scene " + Application.loadedLevelName + ")");
+            _logCollidersAt = Time.unscaledTime + 3f; // objects the game spawns after the scene loads
             AutoWalk.Stop(null);
             Guide.Clear();
             _selected = null;
@@ -441,6 +442,8 @@ namespace SetsunaAccess
             }
         }
 
+        private static float _logCollidersAt = -1f;
+
         // Gimmicks (bridges, doors) change the walkable ground when they move: forget the probed grid then.
         private static int _gimmickSig;
         private static float _nextGimmickCheck;
@@ -452,8 +455,14 @@ namespace SetsunaAccess
             var sig = 17;
             foreach (var g in Object.FindObjectsOfType<BaseGimmickObject>())
                 sig = sig * 31 + (Reflect.Get<bool>(g, "isOn") ? 1 : 0) + (g.isGimmickPlaying ? 2 : 0) + (g.gameObject.activeInHierarchy ? 4 : 0);
+            if (_logCollidersAt > 0f && Time.unscaledTime >= _logCollidersAt) { _logCollidersAt = -1f; Nav.LogExtraColliders(); }
             if (sig == _gimmickSig) return;
-            if (_gimmickSig != 0) { NavLog.Line("gimmick changed: forgetting the walking grid"); Nav.ForgetGeometry(); }
+            if (_gimmickSig != 0)
+            {
+                NavLog.Line("gimmick changed: forgetting the walking grid");
+                Nav.ForgetGeometry();
+                _logCollidersAt = Time.unscaledTime + 3f; // and list what moved once it settles
+            }
             _gimmickSig = sig;
         }
 
