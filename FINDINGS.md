@@ -257,3 +257,11 @@ Objective order (2026-10-08): at progress 121100 GameFlow says "floor in MA_0010
 EBT_121080 was already won), but N fell back to the nearest field monster before looking for the map, and sent
 the party at a stray enemy behind Serendale's barrier. Now: this area's target, then the map path, and the
 nearest-enemy guess only when the table has no step at all. Map-path results are logged to nav.log.
+
+## Magic Consortium: Obtain Spritnite (UiShopSpecialWindow)
+States: selectMaterial (spritnite list; row number = how many can be obtained now), selectItem (materials
+list, own cursor UiCampMateriaMaterial.currentIndex / materialItemIds, moves call SetItemData), confirmation
+states use UiShopConfirmation (already read). Circle on a row opens the materials list; Circle there sells the
+focused material (OnPressSquare -> Sell confirmation); Triangle on a row obtains (OnPressContent). Progress per
+material is Common.GetSellCount(currentShopId, id) against ExchangeItemData.needMaterialNumList. Hooks:
+OnSelectContent (row details), SetState (list header and keys), SetItemData (material focus).

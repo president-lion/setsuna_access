@@ -167,6 +167,17 @@ namespace SetsunaAccess
             return string.IsNullOrEmpty(target) ? what : target + " " + what;
         }
 
+        // Magic Consortium > Obtain Spritnite.
+        public static string Owned(int n) { return "You have " + n; }
+        public static string Needs(string list) { return "Needs " + list; }
+        public static string MaterialProgress(string name, int sold, int need) { return name + " sold " + sold + " of " + need; }
+        public static string MaterialRow(string name, int sold, int need, int have, int index, int count)
+        {
+            return name + ", sold " + sold + " of " + need + (sold >= need ? ", enough" : "") + ", you have " + have + ", " + index + " of " + count;
+        }
+        public static string MaterialsList(string confirmKey) { return "Materials needed. " + confirmKey + " sells the selected one."; }
+        public static string SpritniteKeys(string circle, string triangle) { return circle + " shows the materials, " + triangle + " obtains."; }
+
         /// <summary>Unity KeyCode name as a person would say it: Alpha1 -> 1, LeftControl -> Left Control.</summary>
         public static string KeyName(string keyCode)
         {

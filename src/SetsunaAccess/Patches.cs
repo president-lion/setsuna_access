@@ -68,6 +68,12 @@ namespace SetsunaAccess
             // Camp menu Settings: speak a row's new value when left/right changes it.
             Hook(h, typeof(UiCampConfigChoice), "SelectLogic", prefix: nameof(CampConfig_Before), postfix: nameof(CampConfig_After));
 
+            // Magic Consortium > Obtain Spritnite: row details and the materials list.
+            var sp = typeof(UiShopSpecialWindow);
+            Hook(h, sp, "OnSelectContent", postfix: nameof(Special_Select));
+            Hook(h, sp, "SetState", prefix: nameof(Special_BeforeState), postfix: nameof(Special_State));
+            Hook(h, sp, "SetItemData", postfix: nameof(Special_Item));
+
             // Shop quantity / price confirmation.
             Hook(h, typeof(UiShopConfirmation), "Open", new[] { typeof(int), typeof(int) }, postfix: nameof(ShopConfirm_Open));
             Hook(h, typeof(UiShopConfirmation), "Update_Number", postfix: nameof(ShopConfirm_Number));
@@ -327,6 +333,25 @@ namespace SetsunaAccess
                 if (__instance.DataInfoList.Count == 0) Speech.Say(Strings.NoSaveData, false);
                 Focus.QueueNext();
             });
+        }
+
+        // ---- spritnite exchange --------------------------------------------------------------
+
+        private static void Special_Select(UiShopSpecialWindow __instance, ExchangeItemData _exchange)
+        {
+            Guard("Special.Select", () => ShopSpecial.OnSelectContent(__instance, _exchange));
+        }
+
+        private static void Special_BeforeState() { ShopSpecial.BeforeSetState(); }
+
+        private static void Special_State(UiShopSpecialWindow __instance, UiShopSpecialWindow.ShopSpecialState _state)
+        {
+            Guard("Special.State", () => ShopSpecial.AfterSetState(__instance, (int)_state));
+        }
+
+        private static void Special_Item(UiShopSpecialWindow __instance)
+        {
+            Guard("Special.Item", () => ShopSpecial.OnSetItemData(__instance));
         }
 
         // ---- shop confirmation ------------------------------------------------------------
