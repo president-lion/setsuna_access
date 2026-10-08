@@ -188,7 +188,8 @@ namespace SetsunaAccess
             RequestFlood(player);
             if (_reach == null || _reachScene != _scene) return Reach.Unknown;
             var moved = player - _reachFrom; moved.y = 0f;
-            if (moved.magnitude > 12f) return Reach.Unknown;
+            // A complete fill is the whole area connected to where it started: still right anywhere inside it.
+            if (_reachComplete ? !InReach(player) : moved.magnitude > 12f) return Reach.Unknown;
 
             var center = ToCell(p);
             var n = Mathf.CeilToInt(slack / CellSize);
@@ -209,17 +210,32 @@ namespace SetsunaAccess
         {
             if (_job != null) return;
             var moved = player - _reachFrom; moved.y = 0f;
+            // An unfinished fill (budget ran out) is redone as the player moves; a complete one only when the
+            // player leaves it, something was learned, or now and then for people who moved. The world map
+            // needs a full fill or far exits stay "unknown" and are never hidden.
+            var age = Time.unscaledTime - _reachAt;
             var stale = _reach == null || _reachScene != _scene || _reachDirty
-                        || Time.unscaledTime - _reachAt > 10f || moved.magnitude > 3f;
+                        || (_reachComplete ? age > 60f || !InReach(player) : age > 10f || moved.magnitude > 3f);
             if (!stale) return;
             var start = ToCell(player);
             _ground[start] = player.y;
             _whyLearned = _whyNoGround = _whyRise = _whyDrop = _whyBlocked = _whyWall = 0;
             _blockers.Clear();
             _thin.Clear();
-            _job = new GridPath.FloodJob(start, CanStepLenient, 30000);
+            _job = new GridPath.FloodJob(start, CanStepLenient, IsWorld ? 400000 : 60000);
             _jobFrom = player;
             _reachDirty = false;
+        }
+
+        private static bool IsWorld { get { return string.Equals(_scene, Common.SCENE_NAME_WORLD_MAP, System.StringComparison.OrdinalIgnoreCase); } }
+
+        private static bool InReach(Vector3 p)
+        {
+            var c = ToCell(p);
+            for (var dx = -1; dx <= 1; dx++)
+                for (var dz = -1; dz <= 1; dz++)
+                    if (_reach.Contains(new Cell(c.X + dx, c.Z + dz))) return true;
+            return false;
         }
 
         /// <summary>Per frame: advance the background flood for at most ~2 ms.</summary>
@@ -229,7 +245,9 @@ namespace SetsunaAccess
             if (Application.loadedLevelName != _scene) { _job = null; return; }
             _watch.Reset();
             _watch.Start();
-            while (!_job.Done && _watch.ElapsedMilliseconds < 2) _job.Step(40);
+            // The world map fill is big; at 30 fps the game uses ~3 ms of each 33 ms frame, so 4 ms is spare.
+            var ms = IsWorld ? 4 : 2;
+            while (!_job.Done && _watch.ElapsedMilliseconds < ms) _job.Step(40);
             _watch.Stop();
             if (!_job.Done) return;
 

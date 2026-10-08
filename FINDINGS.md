@@ -272,3 +272,5 @@ exit point and every plan failed. Exit fallbacks now aim for within 3 m, the sca
 within 3 m, and the walk's last 3.5 m to an exit go straight in without wall sliding.
 
 Empty shop lists: UiShopBuyWindow.Setup_Blank shows blankWindow with UiShopBuyType.ToNotMessage() (SHOP73 items, SHOP74 cooking, ...). A chef sells nothing until recipes are learned; the mod now speaks that message.
+
+Reachability on the world map (2026-10-08): the 30000-cell flood ran out about 125 m from the player, so far exits (Morthshaw Woods, 346 m) were Unknown and always shown. Flood cap now 400000 cells on the world map (4 ms slices) and 60000 elsewhere. A complete flood stays valid anywhere inside it: it is only redone when the player leaves it, something is learned, or after 60 s. Incomplete floods keep the old 10 s / 3 m refresh.
