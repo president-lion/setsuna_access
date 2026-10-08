@@ -16,6 +16,14 @@ namespace SetsunaAccess
         private static UiCampTab _pendingTab;
         private static bool _queueNext;
         private static string _messageBar;
+        private static string _extra;
+
+        /// <summary>Extra text for this frame's focus line (e.g. an upgrade preview), or spoken alone.</summary>
+        public static void Append(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            _extra = _extra == null ? text : _extra + ". " + text;
+        }
         private static string _lastBar;
 
         public static void Select(UiChoices choice)
@@ -43,6 +51,8 @@ namespace SetsunaAccess
             var choice = _pending;
             var tab = _pendingTab;
             var bar = _messageBar;
+            var extra = _extra;
+            _extra = null;
             _pending = null;
             _pendingTab = null;
             _messageBar = null;
@@ -55,14 +65,16 @@ namespace SetsunaAccess
                          : choice == null ? Join(Describe(tab), BlankMessage(tab))
                          : Join(Describe(tab), Describe(choice));
                 if (!string.IsNullOrEmpty(bar)) { line = Join(line, bar); _lastBar = bar; }
+                line = Join(line, extra);
                 Speech.Say(line, !_queueNext);
                 _queueNext = false;
             }
             else if (!string.IsNullOrEmpty(bar) && bar != _lastBar)
             {
                 _lastBar = bar;
-                Speech.Say(bar, false);
+                Speech.Say(Join(bar, extra), false);
             }
+            else if (!string.IsNullOrEmpty(extra)) Speech.Say(extra, false);
         }
 
         public static string Describe(UiChoices choice)
@@ -78,7 +90,11 @@ namespace SetsunaAccess
             var line = count > 0 ? Strings.Item(label, index, count) : label;
 
             var content = choice as UiCampContent;
-            if (content != null) line = Join(line, RowDescription(content));
+            if (content != null)
+            {
+                line = Join(line, WeaponMenu.Compare(content));
+                line = Join(line, RowDescription(content));
+            }
             return line;
         }
 
@@ -110,7 +126,9 @@ namespace SetsunaAccess
         /// <summary>When a tab's list is empty the window shows a "blankWindow" message instead (e.g. no techs).</summary>
         private static string BlankMessage(UiCampTab tab)
         {
-            var win = tab.GetComponentInParent<UiCampWindow>();
+            // Camp panels live under separate UI roots, so use the tab's own window reference.
+            Component win = (Component)tab.campSkillWindow ?? (Component)tab.campWeaponWindow ?? (Component)tab.campAccessoriesWindow
+                            ?? (Component)tab.campMateriaWindow ?? (Component)tab.campItemWindow ?? tab.GetComponentInParent<UiCampWindow>();
             var blank = win == null ? null : Reflect.Get<Component>(win, "blankWindow");
             return blank != null && blank.gameObject.activeInHierarchy ? Ui.ReadAll(blank.transform) : null;
         }

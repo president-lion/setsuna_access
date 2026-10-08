@@ -239,7 +239,7 @@ namespace SetsunaAccess
                 if (d.magnitude > _reachMaxDist) _reachMaxDist = d.magnitude;
             }
             _job = null;
-            Log.Append("nav.log", "flood " + _reach.Count + " cells, complete=" + _reachComplete + ", radius " + _reachMaxDist.ToString("0")
+            Log.Append("nav.log", "flood from " + NavLog.P(_jobFrom) + ": " + _reach.Count + " cells, complete=" + _reachComplete + ", radius " + _reachMaxDist.ToString("0")
                                   + "; refused: no ground " + _whyNoGround + ", rise " + _whyRise + ", drop " + _whyDrop
                                   + ", blocked " + _whyBlocked + ", learned " + _whyLearned
                                   + "; party radius " + FieldPartyManager.CollisionRadius.ToString("0.00")

@@ -158,6 +158,9 @@ namespace SetsunaAccess
 
             public bool Done { get; private set; }
             public List<Cell> Path { get; private set; }
+            /// <summary>Cells expanded so far (for nav.log: did it run out of budget?).</summary>
+            public int Expanded { get { return _expanded; } }
+            public int Budget { get { return _maxExpanded; } }
 
             /// <param name="extraCost">Optional added cost for entering a cell (e.g. hugging a wall), or null.</param>
             public SearchJob(Cell start, Cell target, Func<Cell, bool> isGoal, Func<Cell, Cell, bool> canStep, int maxExpanded,

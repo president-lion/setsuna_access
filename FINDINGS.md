@@ -205,3 +205,14 @@ av.log`.
   cost near walls so routes keep to the middle; fallback plans: looser goal, then slim body (0.22) for doorways.
   Walk-to slides along walls (SphereCast ahead), backs off 0.35 s when stuck, and ignores a stop press in its
   first 1.5 s (held Ctrl+Home repeats were stopping it).
+
+## Weapons menu
+
+- Confirming a weapon (`UiCampWeaponWindow.OnPressContent`) equips it immediately; the comparison panel
+  (`UiCampWeaponCommon.SetSelectWeapon`) is colour-only. The mod computes the same base + upgrade stats and
+  speaks the changes on each weapon row, "Equipped X" on confirm, the upgrade panel on Triangle
+  (`OnPressTriangle`, state UpgradeWeapon), the preview per material (`OnSelectUpgradeItem`) and the result.
+- Camp panels are built under separate UI roots (`CreateUiObjFromResCoroutine(..., parentName)`), so use the
+  row/tab's own window properties (`campWeaponWindow`, `campSkillWindow`, ...) rather than GetComponentInParent.
+- nav.log now logs map changes, selections, route attempts (full / loose goal / slim body, cells searched vs
+  budget), walk start / each stall / end with time and distance, bumps with push direction, flood origin.

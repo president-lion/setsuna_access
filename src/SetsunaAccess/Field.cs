@@ -52,6 +52,7 @@ namespace SetsunaAccess
 
         public static void OnFloorReady(FloorDataInfo floor)
         {
+            if (floor != null) NavLog.Line("map: " + TextClean.Clean(floor.mapName) + " (" + floor.id + ", scene " + Application.loadedLevelName + ")");
             AutoWalk.Stop(null);
             Guide.Clear();
             _selected = null;
@@ -125,6 +126,9 @@ namespace SetsunaAccess
 
         private static void Select(Transform t, string name, Kind kind)
         {
+            var player = Player();
+            NavLog.Line("select: " + name + " [" + kind + "] " + NavLog.P(t.position)
+                        + (player == null ? "" : ", player " + NavLog.P(player.position)));
             _selected = t;
             _selectedName = name;
             _selectedKind = kind;
@@ -238,6 +242,7 @@ namespace SetsunaAccess
                     var right = MainCameraControl.cameraTransform.right; right.y = 0f; right.Normalize();
                     var fwd = Vector3.Cross(right, Vector3.up).normalized;
                     var push = right * InputManager.Horizontal + fwd * InputManager.Vertical;
+                    NavLog.Line("bump at " + NavLog.P(leader.position) + " pushing " + NavLog.D(push));
                     Nav.LearnFromBump(leader.position, push);
                     Guide.Stuck(leader.position, push);
                 }

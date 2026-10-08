@@ -52,6 +52,13 @@ namespace SetsunaAccess
 
             Hook(h, typeof(UiSaveLoadWindow), "Open", postfix: nameof(SaveLoad_Open));
 
+            // Weapons: equip, upgrade panel, upgrade preview and result.
+            var ww = typeof(UiCampWeaponWindow);
+            Hook(h, ww, "OnPressContent", postfix: nameof(Weapon_Equip));
+            Hook(h, ww, "OnPressTriangle", postfix: nameof(Weapon_UpgradeOpen));
+            Hook(h, ww, "OnSelectUpgradeItem", postfix: nameof(Weapon_UpgradePreview));
+            Hook(h, ww, "OnPressUpgradeItem", postfix: nameof(Weapon_Upgraded));
+
             // Camp menu Settings: speak a row's new value when left/right changes it.
             Hook(h, typeof(UiCampConfigChoice), "SelectLogic", prefix: nameof(CampConfig_Before), postfix: nameof(CampConfig_After));
 
@@ -275,6 +282,26 @@ namespace SetsunaAccess
                 var v = ConfigMenu.Value(__instance);
                 if (v != __state) Speech.Say(v);
             });
+        }
+
+        private static void Weapon_Equip(UiCampWeaponWindow __instance, HaveItemInfo _info)
+        {
+            Guard("Weapon.Equip", () => WeaponMenu.OnEquip(__instance, _info));
+        }
+
+        private static void Weapon_UpgradeOpen(UiCampWeaponWindow __instance)
+        {
+            Guard("Weapon.Upgrade", () => WeaponMenu.OnUpgradeOpen(__instance));
+        }
+
+        private static void Weapon_UpgradePreview(UiCampWeaponWindow __instance, ItemData _itemData)
+        {
+            Guard("Weapon.Preview", () => WeaponMenu.OnUpgradePreview(__instance, _itemData));
+        }
+
+        private static void Weapon_Upgraded(UiCampWeaponWindow __instance)
+        {
+            Guard("Weapon.Upgraded", () => WeaponMenu.OnUpgraded(__instance));
         }
 
         private static void SaveLoad_Open(UiSaveLoadWindow __instance)

@@ -45,12 +45,16 @@ namespace SetsunaAccess
             }
         }
 
+        private static Nav.RouteJob _lastSearch;
+
         private static void Finish()
         {
+            _lastSearch = _job;
             var route = Nav.RouteOf(_job);
             var from = _job.From;
             if (route == null && _attempt < 2)
             {
+                NavLog.Line("route attempt " + _attempt + " failed, searched " + _job.Search.Expanded + "/" + _job.Search.Budget);
                 _attempt++;
                 // 1: exits past the walkable edge, try a looser goal. 2: a doorway too narrow for the grid to
                 // fit the full body through, try a slim body.
@@ -63,9 +67,12 @@ namespace SetsunaAccess
             _index = 0;
             _aimAt = 0f;
             _replanAt = Time.unscaledTime + (_route != null ? 4f : 5f);
-            Log.Append("nav.log", _route == null
-                ? "no route " + Fmt(from) + " -> " + _target.name + " " + Fmt(_target.position)
-                : "route " + _route.Count + " pts, " + Nav.Length(_route, 0).ToString("0.0") + " m, " + Fmt(from) + " -> " + _target.name);
+            var kind = _attempt == 0 ? "full" : _attempt == 1 ? "loose goal" : "slim body";
+            var searched = _lastSearch == null ? "" : ", searched " + _lastSearch.Search.Expanded + "/" + _lastSearch.Search.Budget;
+            NavLog.Line(_route == null
+                ? "no route (" + kind + searched + ") " + NavLog.P(from) + " -> " + _target.name + " " + NavLog.P(_target.position)
+                : "route (" + kind + searched + ") " + _route.Count + " pts, " + Nav.Length(_route, 0).ToString("0.0")
+                  + " m, " + NavLog.P(from) + " -> " + _target.name + " " + NavLog.P(_target.position));
         }
 
         public static bool HasRoute { get { return _route != null; } }

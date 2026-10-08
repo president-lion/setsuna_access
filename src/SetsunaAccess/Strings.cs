@@ -115,6 +115,13 @@ namespace SetsunaAccess
         public static string Percent(int p) { return p + " percent"; }
         public static string Option(int index, int count) { return "option " + (index + 1) + " of " + count; }
         public static string WithShop(string person, string shop) { return person + ", " + shop; }
+        public const string EquippedNow = "equipped";
+        public const string SameStats = "same stats as equipped";
+        public const string UpgradeTitle = "Upgrade.";
+        public const string Upgraded = "Upgraded.";
+        public static string Equipped(string name) { return "Equipped " + name; }
+        private static readonly string[] StatNames = { "Attack", "Defense", "Magic attack", "Magic defense" };
+        public static string StatChange(int stat, int from, int to) { return StatNames[stat] + " " + from + " to " + to; }
         public static string CountPrice(int count, string price) { return count + ", price " + price; }
         public static string Hp(int now, int max) { return "HP " + now + " of " + max; }
         public static string Mp(int now, int max) { return "MP " + now + " of " + max; }

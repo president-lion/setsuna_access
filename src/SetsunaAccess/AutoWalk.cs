@@ -25,6 +25,8 @@ namespace SetsunaAccess
         private static float _detourUntil;
         private static float _detourAngle;
         private static float _backUntil;
+        private static Vector3 _startPos;
+        private static float _travelled;
         private static Vector3 _backDir;
 
         /// <summary>Seconds since the walk started (a held key's repeat shouldn't count as "stop").</summary>
@@ -47,12 +49,18 @@ namespace SetsunaAccess
             _nextCheck = Time.time + 1f;
             var p = Leader();
             _lastPos = p == null ? Vector3.zero : p.position;
+            _startPos = _lastPos;
+            _travelled = 0f;
+            NavLog.Line("walk start -> " + name + " " + NavLog.P(target.position) + " from " + NavLog.P(_lastPos) + ", arrive within " + arriveRadius.ToString("0.0"));
             Speech.Say(Strings.WalkingTo(name));
         }
 
         public static void Stop(string say)
         {
             if (!_active) return;
+            var p = Leader();
+            NavLog.Line("walk end: " + (string.IsNullOrEmpty(say) ? "scene change" : say) + " at " + (p == null ? "-" : NavLog.P(p.position))
+                        + ", " + (Time.time - _startedAt).ToString("0.0") + " s, walked " + _travelled.ToString("0.0") + " m, stuck " + _stuck);
             _active = false;
             _target = null;
             if (!string.IsNullOrEmpty(say)) Speech.Say(say);
@@ -99,9 +107,12 @@ namespace SetsunaAccess
             {
                 var moved = leader.position - _lastPos;
                 moved.y = 0f;
+                _travelled += moved.magnitude;
                 if (moved.magnitude < 0.3f)
                 {
                     _stuck++;
+                    NavLog.Line("walk stuck #" + _stuck + " at " + NavLog.P(leader.position) + " heading " + NavLog.D(dir)
+                                + (_stuck >= 3 ? ", backing off and sidestepping" : ", backing off"));
                     if (_stuck > 6) { Stop(Strings.Blocked(_name)); return; }
                     // Learn the obstacle, back off a step, and re-plan; after a couple of tries also sidestep.
                     Nav.LearnFromBump(leader.position, dir);
