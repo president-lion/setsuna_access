@@ -119,8 +119,12 @@ namespace SetsunaAccess
             }
             if (Pressed(KeyCode.F11))
             {
-                Log.Info("UiDump", UiDump.Write());
-                Speech.Say(Strings.UiDumped);
+                if (ctrl) SaveDump.Write();
+                else
+                {
+                    Log.Info("UiDump", UiDump.Write());
+                    Speech.Say(Strings.UiDumped);
+                }
             }
         }
 
