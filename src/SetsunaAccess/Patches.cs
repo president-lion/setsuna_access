@@ -57,6 +57,7 @@ namespace SetsunaAccess
             Hook(h, sw, "OnSelectSmallContent", postfix: nameof(Story_Entry));
             Hook(h, sw, "OnSelectLargeContent", postfix: nameof(Story_Large));
             Hook(h, sw, "SetStoryState", postfix: nameof(Story_State));
+            Hook(h, typeof(UiCampStoryAbout), "OnPressTriangle", postfix: nameof(Story_Page));
 
             // Weapons: equip, upgrade panel, upgrade preview and result.
             var ww = typeof(UiCampWeaponWindow);
@@ -311,6 +312,7 @@ namespace SetsunaAccess
 
         private static void Story_Entry(UiCampStoryWindow __instance) { Guard("Story.Entry", () => StoryMenu.OnSelectEntry(__instance)); }
         private static void Story_Large(UiCampStoryWindow __instance) { Guard("Story.Large", () => StoryMenu.OnSelectLarge(__instance)); }
+        private static void Story_Page(UiCampStoryAbout __instance) { Guard("Story.Page", () => StoryMenu.OnPage(__instance)); }
         private static void Story_State(UiCampStoryWindow __instance) { Guard("Story.State", () => StoryMenu.OnState(__instance)); }
 
         private static void Weapon_Equip(UiCampWeaponWindow __instance, HaveItemInfo _info)

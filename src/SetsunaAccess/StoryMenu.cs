@@ -29,6 +29,15 @@ namespace SetsunaAccess
                 Focus.Append(Panel(win, "storyHistory"));
         }
 
+        /// <summary>Triangle (J) turns the detail panel's page (UiCampStoryAbout.OnPressTriangle): read the new page.</summary>
+        public static void OnPage(UiCampStoryAbout about)
+        {
+            var max = Reflect.Int(about, "pageMaxNum");
+            if (max <= 1) return;
+            var text = about.gameObject.activeInHierarchy ? Ui.ReadAll(about.transform) : null;
+            Speech.Say(Strings.PageOf(Reflect.Int(about, "currentPageNum"), max) + (string.IsNullOrEmpty(text) ? "" : ". " + text));
+        }
+
         private static string Panel(UiCampStoryWindow win, string field)
         {
             var panel = Reflect.Get<Component>(win, field);

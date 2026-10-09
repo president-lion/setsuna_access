@@ -171,6 +171,7 @@ namespace SetsunaAccess
         public const string SaveDumped = "Game written to setsuna_save.txt in the game folder.";
         public const string SaveDumpNoGame = "Load a game first.";
         public static string EnemyNumber(string name, int number) { return name + " " + number; }
+        public static string PageOf(int page, int max) { return "Page " + page + " of " + max; }
         public static string MomentumCharged(string name, int stock) { return name + " Momentum " + stock; }
         public static string BattleStart(string enemies)
         {
