@@ -1,7 +1,7 @@
 # Built-in names for scanner objects, shipped with the mod. Same format as UserData\SetsunaAccess\names.txt:
 # key, a tab, then the name. Players' names.txt entries get copied here.
 MA_0000_01|Exit|mjarea_06|-75,-114	forgotten shores
-MA_0000_01|Exit|mjarea_14|-98,41	milsay wood second entrance
+MA_0000_01|Exit|mjarea_14|-98,41	Mysleigh Woods second entrance
 MA_0002_01|Exit|mjarea_01|3,38	world map
 MA_0002_01|Exit|mjarea_02|-6,24	office
 MA_0007_02|Exit|mjarea_01|0,-2	go out
@@ -10,9 +10,9 @@ MA_0009_01|Exit|mjarea_01|0,-3	south exit
 MA_0009_01|Exit|mjarea_02|2,47	north exit
 MA_0010_01|Exit|mjarea_01|0,-3	village exit
 MA_0010_01|Exit|mjarea_02|-14,24	pub entrance
-MA_0010_01|Exit|mjarea_03|-7,33	house1
+MA_0010_01|Exit|mjarea_03|-7,33	house 1
 MA_0010_01|Exit|mjarea_04|11,35	Captain's House
-MA_0010_01|Exit|mjarea_05|17,26	house2
+MA_0010_01|Exit|mjarea_05|17,26	house 2
 MA_0010_02|Exit|mjarea_01|0,-2	leave
 MA_0010_03|Exit|mjarea_01|0,-2	leave
 MA_0010_04|Exit|mjarea_01|0,-2	leave
@@ -21,24 +21,24 @@ MA_0011_01|Exit|mjarea_02|0,13	enter the cave
 MA_0011_03|Exit|mjarea_01|0,-15	enter cave other side
 MA_0011_03|Exit|mjarea_02|0,3	leave other side
 MA_0012_01|Exit|mjarea_01|-29,18	leave
-MA_0012_01|Exit|mjarea_02|-12,-4	house3
-MA_0012_01|Exit|mjarea_03|-4,-4	house2
+MA_0012_01|Exit|mjarea_02|-12,-4	house 3
+MA_0012_01|Exit|mjarea_03|-4,-4	house 2
 MA_0012_01|Exit|mjarea_04|4,-4	pub
-MA_0012_01|Exit|mjarea_05|12,-4	dina's house
-MA_0012_01|Exit|mjarea_06|0,17	house1
+MA_0012_01|Exit|mjarea_05|12,-4	Dinas's house
+MA_0012_01|Exit|mjarea_06|0,17	house 1
 MA_0012_03|Exit|mjarea_01|0,-2	leave
 MA_0012_04|Exit|mjarea_01|0,-2	leave
 MA_0012_05|Exit|mjarea_01|0,-2	leave
 MA_0013_01|Exit|mjarea_01|0,-7	leave woods
 MA_0013_01|Exit|mjarea_02|50,67	continue
-MA_0013_01|Exit|mjarea_03|0,36	forest part2
+MA_0013_01|Exit|mjarea_03|0,36	forest part 2
 MA_0013_02|Exit|mjarea_01|2,0	leave to forest
 MA_0013_02|Exit|mjarea_02|-15,33	leave the forest other side
 MA_0014_01|Exit|mjarea_01|0,-5	leave
 MA_0014_01|Exit|mjarea_02|-15,37	pub entrance
-MA_0014_01|Exit|mjarea_03|-8,39	house3
-MA_0014_01|Exit|mjarea_04|9,41	house2
-MA_0014_01|Exit|mjarea_05|22,43	house1
+MA_0014_01|Exit|mjarea_03|-8,39	house 3
+MA_0014_01|Exit|mjarea_04|9,41	house 2
+MA_0014_01|Exit|mjarea_05|22,43	house 1
 MA_0014_01|Exit|mjarea_11|0,69	lordship's house
 MA_0014_02|Exit|mjarea_01|-1,-2	leave
 MA_0014_03|Exit|mjarea_01|0,-2	leave
