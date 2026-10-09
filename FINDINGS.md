@@ -382,3 +382,12 @@ Locked chests (2026-10-09): ItemBox with gimmickParam.trigger WITH_KEY opens onl
 id is gimmickParam.argument1 (not used up). EventItemMessage has a single key, the World Key, which the story
 gives you and which opens all sealed chests (and the airship). No key lies in a map. The scanner now says "Locked
 chest, needs the <key>" or "you have the <key>". The build now installs while the game runs again (user's call).
+
+Session 2026-10-09 13:41: the spin safeguard fired at 13:44:46 (19 threads, ~2.5 min in as before) and CPU sat
+at ~11% of the machine afterwards with fps unchanged; it dropped to ~1% in some battles. Fixes from that log:
+(1) GameFlow talk targets "NPC_10070" are "2010070" in placements and NPCParameter.id (Common.CharacterIdToIndex,
++2000000), so N never found a person; MapData.NpcIndexId converts. (2) Walk-to into a room exit said "Target
+gone" when the exit trigger switched off at the map jump; now silent. (3) World map, Tenderville side -> Floneia
+Citadel: the way south is a ~1 m gap in thin HitWall lines that the party walks through but the 0.425 m planning
+body refuses; world map now has the slim fallback with a 0.32 m body (0.22 elsewhere). Offline world.pkl lacks the
+ground around the Citadel, so this was judged from the runtime log (player walked through "body overlaps HitWall").

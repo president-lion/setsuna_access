@@ -59,13 +59,20 @@ namespace SetsunaAccess
 
         // ---- this area ------------------------------------------------------------------
 
+        private static string NpcIdOf(BaseCharacter c)
+        {
+            var npc = c as NPCControl;
+            return npc == null || npc.npcParam == null ? null : npc.npcParam.id;
+        }
+
         private static bool TryHere(Step s)
         {
             switch (s.Trigger)
             {
                 case TalkTrigger:
+                    var alt = MapData.NpcIndexId(s.Terms);
                     foreach (var c in UnityEngine.Object.FindObjectsOfType<BaseCharacter>())
-                        if (c.gameObject.activeInHierarchy && c.name == s.Terms)
+                        if (c.gameObject.activeInHierarchy && (c.name == s.Terms || (alt != null && (c.name == alt || NpcIdOf(c) == alt))))
                         {
                             var name = Narration.Name(c);
                             return Here(c.transform, Strings.ObjectiveTalk(name.Length > 0 ? name : Strings.Person), false);

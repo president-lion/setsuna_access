@@ -215,15 +215,25 @@ namespace SetsunaAccess
         }
 
         /// <summary>Is someone with this object name (uniqueId) or character id placed on the floor now?</summary>
+        /// <summary>GameFlow names a person "NPC_10070"; placements and NPC objects use the index id "2010070"
+        /// (Common.CharacterIdToIndex: the number + 2000000). Null when id isn't of that form.</summary>
+        public static string NpcIndexId(string id)
+        {
+            if (id == null || !id.StartsWith("NPC_")) return null;
+            int n;
+            return int.TryParse(id.Substring(4), out n) ? (n + 2000000).ToString() : null;
+        }
+
         public static bool HasNpc(string floorId, string id)
         {
             ObjectPlacementManager.PlacementParameter p;
             if (!TryPlacement(floorId, out p) || p.npcParameter == null) return false;
+            var alt = NpcIndexId(id);
             foreach (var g in p.npcParameter)
             {
                 if (!Placed(g.npcGroup.common) || g.npcParam == null) continue;
                 foreach (var n in g.npcParam)
-                    if (n.uniqueId == id || n.id == id) return true;
+                    if (n.uniqueId == id || n.id == id || n.id == alt) return true;
             }
             return false;
         }

@@ -85,9 +85,10 @@ namespace SetsunaAccess
             _lastSearch = _job;
             var route = Nav.RouteOf(_job);
             var from = _job.From;
-            // On the world map the walls (HitWall) bound the land itself: the slim and lenient fallbacks only found
-            // gaps the party can't fit through, and walk-to bumped along the mountains (Frost Caves' far entrance).
-            var lastAttempt = MapData.IsWorldMap(SceneManager.CurrentFloorInfo == null ? null : SceneManager.CurrentFloorInfo.id) ? 1 : 3;
+            // On the world map the walls (HitWall) bound the land itself: the lenient fallback only found gaps the
+            // party can't fit through, and walk-to bumped along the mountains (Frost Caves' far entrance). The slim
+            // plan stays, with a body only a little slimmer there (Nav.Radius).
+            var lastAttempt = MapData.IsWorldMap(SceneManager.CurrentFloorInfo == null ? null : SceneManager.CurrentFloorInfo.id) ? 2 : 3;
             if (route == null && _attempt < lastAttempt)
             {
                 NavLog.Line("route attempt " + _attempt + " failed, searched " + _job.Search.Expanded + "/" + _job.Search.Budget

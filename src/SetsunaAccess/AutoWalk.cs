@@ -37,6 +37,7 @@ namespace SetsunaAccess
         private static int _stuckRepeats;
         private static float _pausedAt = -10f;   // last time a menu, event or battle held the walk
         private static bool _saidPaused;
+        private static float _lastDistance = float.MaxValue;
 
         /// <summary>Seconds since the walk started (a held key's repeat shouldn't count as "stop").</summary>
         public static float Age { get { return Time.time - _startedAt; } }
@@ -53,6 +54,7 @@ namespace SetsunaAccess
             _arrive = arriveRadius;
             _active = true;
             _startedAt = Time.time;
+            _lastDistance = float.MaxValue;
             _stuck = 0;
             _detourUntil = 0f;
             _nextCheck = Time.time + 1f;
@@ -116,12 +118,19 @@ namespace SetsunaAccess
                 Stop(Strings.WalkCancelled);
                 return;
             }
-            if (_target == null || !_target.gameObject.activeInHierarchy) { Stop(Strings.WalkLost); return; }
+            if (_target == null || !_target.gameObject.activeInHierarchy)
+            {
+                // An exit switches itself off as its map jump starts: that's arriving, and the new map's name follows.
+                if (_arrive <= 0.25f && _lastDistance < 4f) { Stop(null); return; }
+                Stop(Strings.WalkLost);
+                return;
+            }
 
             var leader = Leader();
             if (leader == null) return;
             var d = _target.position - leader.position;
             d.y = 0f;
+            _lastDistance = d.magnitude;
             if (d.magnitude <= _arrive) { Stop(Strings.Arrived(_name)); return; }
 
             // Head for the next point on the walkable route (straight at the target if there is none).

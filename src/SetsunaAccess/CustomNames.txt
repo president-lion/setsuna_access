@@ -20,6 +20,15 @@ MA_0011_01|Exit|mjarea_01|0,-3	leave
 MA_0011_01|Exit|mjarea_02|0,13	enter the cave
 MA_0011_03|Exit|mjarea_01|0,-15	enter cave other side
 MA_0011_03|Exit|mjarea_02|0,3	leave other side
+MA_0012_01|Exit|mjarea_01|-29,18	leave
+MA_0012_01|Exit|mjarea_02|-12,-4	house3
+MA_0012_01|Exit|mjarea_03|-4,-4	house2
+MA_0012_01|Exit|mjarea_04|4,-4	pub
+MA_0012_01|Exit|mjarea_05|12,-4	dina's house
+MA_0012_01|Exit|mjarea_06|0,17	house1
+MA_0012_03|Exit|mjarea_01|0,-2	leave
+MA_0012_04|Exit|mjarea_01|0,-2	leave
+MA_0012_05|Exit|mjarea_01|0,-2	leave
 MA_0013_01|Exit|mjarea_01|0,-7	leave woods
 MA_0013_01|Exit|mjarea_02|50,67	continue
 MA_0013_01|Exit|mjarea_03|0,36	forest part2

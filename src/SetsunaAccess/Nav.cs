@@ -823,7 +823,14 @@ namespace SetsunaAccess
         // Slim mode: a fallback plan for narrow doorways the half-metre grid can't fit the full body through.
         private static Mode _mode;
 
-        private static float Radius() { return _mode == Mode.Full ? BodyRadius() * 0.85f : 0.22f; }
+        // On the world map the slim plan is only a little slimmer: the land's walls are thin HitWall lines the party
+        // squeezes through at about 1 m (the way south to Floneia Citadel), but the 0.22 town doorway body found
+        // gaps it couldn't pass (Frost Caves' far entrance).
+        private static float Radius()
+        {
+            if (_mode == Mode.Full) return BodyRadius() * 0.85f;
+            return MapData.IsWorldMap(SceneManager.CurrentFloorInfo == null ? null : SceneManager.CurrentFloorInfo.id) ? 0.32f : 0.22f;
+        }
 
         /// <summary>Walkable in a straight line: nothing in the way at body height, and no steps too big along it.</summary>
         private static bool StraightClear(Vector3 a, Vector3 b)
