@@ -359,11 +359,20 @@ namespace SetsunaAccess
         public static Vector3 Slide(Vector3 pos, Vector3 dir)
         {
             Prepare();
-            RaycastHit hit;
             var r = Radius() * 0.8f;
-            if (!Physics.SphereCast(pos + Vector3.up * 0.6f, r, dir, out hit, 0.6f, _groundMask | _blockMask, QueryTriggerInteraction.Ignore))
-                return dir;
-            var n = hit.normal; n.y = 0f;
+            // Only upright faces are walls. A ramp ahead (Mysleigh Woods, ~30 degrees) meets the sphere too, and its
+            // normal points straight back, so the old test read it as a head-on wall and steered sideways into the
+            // rocks beside the ramp; the game itself walks up it fine.
+            var found = false;
+            var best = new RaycastHit();
+            foreach (var h in Physics.SphereCastAll(pos + Vector3.up * 0.6f, r, dir, 0.6f, _groundMask | _blockMask, QueryTriggerInteraction.Ignore))
+            {
+                var isBlock = (_blockMask & (1 << h.collider.gameObject.layer)) != 0;
+                if (!isBlock && (h.distance <= 0f || Mathf.Abs(h.normal.y) >= 0.35f)) continue;
+                if (!found || h.distance < best.distance) { best = h; found = true; }
+            }
+            if (!found) return dir;
+            var n = best.normal; n.y = 0f;
             if (n.sqrMagnitude < 0.01f) return dir;
             n.Normalize();
             var slide = dir - n * Vector3.Dot(dir, n);

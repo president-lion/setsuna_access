@@ -158,6 +158,13 @@ namespace SetsunaAccess
                 _travelled += moved.magnitude;
                 if (moved.magnitude < 0.3f)
                 {
+                    // Stopped against the thing itself (a chest's box, a person): close enough to use it.
+                    if (_arrive > 0.25f && d.magnitude <= _arrive + 1f)
+                    {
+                        NavLog.Line("walk: stopped " + d.magnitude.ToString("0.0") + " m from the target, counting it as arrived");
+                        Stop(Strings.Arrived(_name));
+                        return;
+                    }
                     _stuck++;
                     NavLog.Line("walk stuck #" + _stuck + " at " + NavLog.P(leader.position) + " heading " + NavLog.D(dir)
                                 + (_stuck >= 3 ? ", backing off and sidestepping" : ", backing off"));

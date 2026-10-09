@@ -352,3 +352,11 @@ a corner was 3.3 m away straight but 11 m on foot, and the straight-in rule skip
 only when the remaining route is within 1 m of the straight distance. (3) Mysleigh Woods: 8 stucks at one spot,
 each marking a 3-cell strip that the next plan simply went round inside the same obstacle; repeated stucks
 within 1.5 m now widen (up to 11 cells) and deepen (2 rows) the blocked patch.
+
+Mysleigh Woods bump, solved (2026-10-08): the spot (39.5, 47.9) is the foot of a ~30 degree ramp (HitGround
+normals y 0.86-0.88) between box-shaped rock colliders. An offline copy of WalkUpdate + UpdateHeight
+(research/geo/gamewalk.py) walks straight up it. The fault was Nav.Slide: its sphere cast (0.6 m up, 0.4 m
+radius) meets the ramp ~0.25 m ahead, the flattened normal points straight back, and the "head-on" branch turned
+the party sideways into the rocks. Slide now only counts upright faces (|normal.y| < 0.35) or blocking layers.
+Chests: walk-to stalled 1.3 m from a chest against its pCube1 box; the chest opens from ~2 m, so a stall within
+the arrival radius + 1 m now counts as arrived. Battle: enemies sharing a name are numbered by battle-list order.

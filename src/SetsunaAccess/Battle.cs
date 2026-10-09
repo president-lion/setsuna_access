@@ -230,7 +230,23 @@ namespace SetsunaAccess
             return list != null && index >= 0 && index < list.Count ? list[index] : null;
         }
 
-        private static string Name(BattleCharacter c) { return TextClean.Clean(c.charaParam.Name); }
+        /// <summary>The character's name; enemies that share a name get a number by their place in the battle
+        /// list (Muffy 1, Muffy 2), which stays the same as others fall.</summary>
+        private static string Name(BattleCharacter c)
+        {
+            var name = TextClean.Clean(c.charaParam.Name);
+            if (!c.IsEnemy) return name;
+            var list = BattleManager.BattleCharaList;
+            if (list == null) return name;
+            int number = 0, count = 0;
+            foreach (var o in list)
+            {
+                if (o == null || !o.IsEnemy || TextClean.Clean(o.charaParam.Name) != name) continue;
+                count++;
+                if (ReferenceEquals(o, c)) number = count;
+            }
+            return count > 1 && number > 0 ? Strings.EnemyNumber(name, number) : name;
+        }
 
         private static string Vitals(BattleCharacter c)
         {

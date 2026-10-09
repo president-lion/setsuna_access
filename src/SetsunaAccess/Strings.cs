@@ -163,6 +163,7 @@ namespace SetsunaAccess
         public static string Ready(string name) { return name + " ready"; }
         public static string Cost(string cost) { return "Cost " + cost; }
         public static string EnemySkill(string skill) { return "Enemy: " + skill; }
+        public static string EnemyNumber(string name, int number) { return name + " " + number; }
         public static string MomentumCharged(string name, int stock) { return name + " Momentum " + stock; }
         public static string BattleStart(string enemies)
         {
