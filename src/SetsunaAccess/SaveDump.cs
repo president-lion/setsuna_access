@@ -48,7 +48,7 @@ namespace SetsunaAccess
             sb.AppendLine("All party members: " + Members(party, chars));
             sb.AppendLine();
 
-            sb.AppendLine("== Characters ==");
+            sb.AppendLine("CHARACTERS");
             for (var i = 0; chars != null && i < chars.Count && i < 7; i++)
             {
                 var c = chars[i];
@@ -78,7 +78,7 @@ namespace SetsunaAccess
             }
             sb.AppendLine();
 
-            sb.AppendLine("== Inventory ==");
+            sb.AppendLine("INVENTORY");
             var items = Get<HaveItemInfo[]>(sdm, "haveItemInfo");
             var byType = new SortedDictionary<string, List<string>>();
             if (items != null)
@@ -104,7 +104,7 @@ namespace SetsunaAccess
             }
             sb.AppendLine();
 
-            sb.AppendLine("== Story flags (raw) ==");
+            sb.AppendLine("STORY FLAGS (raw numbers)");
             var flags = Get<int[]>(sdm, "eventFlag");
             if (flags != null)
             {
