@@ -81,6 +81,12 @@ namespace SetsunaAccess
         {
             var cfg = choice as UiCampConfigChoice;
             if (cfg != null) return ConfigMenu.Describe(cfg);
+            var card = choice as UiCampCharaChoices;
+            if (card != null)
+            {
+                var party = PartyMenu.Describe(card);
+                if (party != null) return party;
+            }
             var label = Ui.ReadAll(choice.transform);
             if (label.Length == 0 && choice is UiCampTab) label = TabLabel((UiCampTab)choice);
             if (choice.IsLock) label = Join(label, Strings.Locked);

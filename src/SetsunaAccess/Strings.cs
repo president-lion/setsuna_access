@@ -171,6 +171,24 @@ namespace SetsunaAccess
         public const string SaveDumped = "Game written to setsuna_save.txt in the game folder.";
         public const string SaveDumpNoGame = "Load a game first.";
         public static string EnemyNumber(string name, int number) { return name + " " + number; }
+        // Character cards and the Change Party screen.
+        public static string CharaCard(string name, int lv, int hp, int maxHp, int mp, int maxMp, int expToNext)
+        {
+            return name + ", level " + lv + ", HP " + hp + " of " + maxHp + ", MP " + mp + " of " + maxMp
+                   + (expToNext < 0 ? ", max level" : ", " + expToNext + " EXP to next level");
+        }
+        public const string InBattleParty = "in battle party";
+        public const string CantLeaveParty = "can't leave the battle party";
+        public const string Chosen = "chosen";
+        public const string Unavailable = "unavailable";
+        public const string EmptySlot = "empty slot";
+        public const string RemoveFromParty = "Remove from party";
+        public const string Reserve = "Reserve";
+        public const string SwapCancelled = "Cancelled";
+        public static string BattleSlot(int n, int of) { return "Battle party " + n + " of " + of; }
+        public static string PartyNow(string names) { return "Battle party now " + names; }
+        public static string PickReserve(string who) { return who + " chosen. Now pick who to swap in from the reserve"; }
+        public static string PickSlot(string who) { return who + " chosen. Pick a battle party slot to swap with"; }
         public static string PageOf(int page, int max) { return "Page " + page + " of " + max; }
         public static string MomentumCharged(string name, int stock) { return name + " Momentum " + stock; }
         public static string BattleStart(string enemies)

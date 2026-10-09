@@ -52,6 +52,12 @@ namespace SetsunaAccess
 
             Hook(h, typeof(UiSaveLoadWindow), "Open", postfix: nameof(SaveLoad_Open));
 
+            // Change Party: choosing someone, the swap, cancelling.
+            Hook(h, typeof(Common), "SwitchMember", postfix: nameof(Party_Switch));
+            Hook(h, typeof(UiCampOrganizeWindow), "FieldPressLogic", postfix: nameof(Party_SlotPress));
+            Hook(h, typeof(UiCampOrganizeWindow), "PartyPressLogic", postfix: nameof(Party_ReservePress));
+            Hook(h, typeof(UiCampOrganizeWindow), "OnPressCross", prefix: nameof(Party_Cancel));
+
             // Snow Chronicles: entry details, location panel, History page.
             var sw = typeof(UiCampStoryWindow);
             Hook(h, sw, "OnSelectSmallContent", postfix: nameof(Story_Entry));
@@ -312,6 +318,10 @@ namespace SetsunaAccess
 
         private static void Story_Entry(UiCampStoryWindow __instance) { Guard("Story.Entry", () => StoryMenu.OnSelectEntry(__instance)); }
         private static void Story_Large(UiCampStoryWindow __instance) { Guard("Story.Large", () => StoryMenu.OnSelectLarge(__instance)); }
+        private static void Party_Switch() { Guard("Party.Switch", PartyMenu.OnSwitch); }
+        private static void Party_SlotPress(UiCampOrganizeWindow __instance) { Guard("Party.Slot", () => PartyMenu.OnPress(__instance, true)); }
+        private static void Party_ReservePress(UiCampOrganizeWindow __instance) { Guard("Party.Reserve", () => PartyMenu.OnPress(__instance, false)); }
+        private static void Party_Cancel(UiCampOrganizeWindow __instance, bool flag) { Guard("Party.Cancel", () => PartyMenu.OnCancel(__instance, flag)); }
         private static void Story_Page(UiCampStoryAbout __instance) { Guard("Story.Page", () => StoryMenu.OnPage(__instance)); }
         private static void Story_State(UiCampStoryWindow __instance) { Guard("Story.State", () => StoryMenu.OnState(__instance)); }
 
