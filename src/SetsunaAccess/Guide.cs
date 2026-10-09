@@ -66,14 +66,17 @@ namespace SetsunaAccess
         // within 1.7 m of the exit point was on the far side of the door; 3 m reaches the doorstep.
         private static float Loose { get { return _goal < 0.5f ? _goal + 3f : _goal + 1.5f; } }
 
+        // Exits and story spots: walked into, so the loose goal must see the point (not be behind a wall).
+        private static bool IsExit { get { return _goal < 0.5f; } }
+
         private static Nav.RouteJob StartAttempt(Vector3 from, int attempt)
         {
             switch (attempt)
             {
                 case 0: return Nav.StartRoute(from, _target.position, _goal);
-                case 1: return Nav.StartRoute(from, _target.position, Loose, 3000);
-                case 2: return Nav.StartRoute(from, _target.position, Loose, 8000, Nav.Mode.Slim);
-                default: return Nav.StartRoute(from, _target.position, Loose, 12000, Nav.Mode.Lenient);
+                case 1: return Nav.StartRoute(from, _target.position, Loose, 3000, Nav.Mode.Full, IsExit);
+                case 2: return Nav.StartRoute(from, _target.position, Loose, 8000, Nav.Mode.Slim, IsExit);
+                default: return Nav.StartRoute(from, _target.position, Loose, 12000, Nav.Mode.Lenient, IsExit);
             }
         }
 

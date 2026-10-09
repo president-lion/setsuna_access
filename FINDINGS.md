@@ -344,3 +344,11 @@ goals / reachability lookups match the target's height (within 3 m). Tests: Floo
 SearchCrossesOverTheWallOnTheWalkway.
 
 Talismans (2026-10-08): the effect lives only in a side panel (UiShopAccessoriesCommon.SetAccessories): slotTypes (command / passive = support / multi = either), the skill description (param.skillId) and Flux bonuses (param.sublimationId -> SublimationData.name). Talisman.Describe appends these to any UiCampContent row whose CurrentItemData is an ACCESSORY (Equip Talisman and talisman shops).
+
+Exits and repeated bumps (2026-10-08): (1) Floneia Citadel: the loose exit goal (3 m) accepted a cell outside a
+house wall and the straight final approach bumped the wall 8 times. Loose exit goals now need a clear knee-height
+line to the exit point (both ways), where only a collider named *door* may be in the way. (2) A house exit round
+a corner was 3.3 m away straight but 11 m on foot, and the straight-in rule skipped the route; it now applies
+only when the remaining route is within 1 m of the straight distance. (3) Mysleigh Woods: 8 stucks at one spot,
+each marking a 3-cell strip that the next plan simply went round inside the same obstacle; repeated stucks
+within 1.5 m now widen (up to 11 cells) and deepen (2 rows) the blocked patch.

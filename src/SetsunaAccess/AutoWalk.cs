@@ -33,6 +33,8 @@ namespace SetsunaAccess
         private static float _bestLeft, _bestAt;
         private static bool _saidStraight;
         private static int _routeVersion;
+        private static Vector3 _stuckSpot;
+        private static int _stuckRepeats;
 
         /// <summary>Seconds since the walk started (a held key's repeat shouldn't count as "stop").</summary>
         public static float Age { get { return Time.time - _startedAt; } }
@@ -59,6 +61,8 @@ namespace SetsunaAccess
             _bestLeft = float.MaxValue;
             _saidStraight = false;
             _routeVersion = Guide.Version;
+            _stuckRepeats = 0;
+            _stuckSpot = new Vector3(1e6f, 0f, 1e6f);
             _bestAt = Time.time;
             NavLog.Line("walk start -> " + name + " " + NavLog.P(target.position) + " from " + NavLog.P(_lastPos) + ", arrive within " + arriveRadius.ToString("0.0"));
             Speech.Say(Strings.WalkingTo(name));
@@ -111,7 +115,7 @@ namespace SetsunaAccess
             Vector3 aim;
             float left;
             Guide.SetTarget(_target, _arrive);
-            Guide.Aim(leader.position, out aim, out left);
+            var routed = Guide.Aim(leader.position, out aim, out left);
             var dir = aim - leader.position;
             dir.y = 0f;
             dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : d.normalized;
@@ -159,7 +163,10 @@ namespace SetsunaAccess
                                 + (_stuck >= 3 ? ", backing off and sidestepping" : ", backing off"));
                     if (_stuck > 6) { Stop(Strings.Blocked(_name)); return; }
                     // Learn the obstacle, back off a step, and re-plan; after a couple of tries also sidestep.
-                    Nav.LearnFromBump(leader.position, dir);
+                    var here = leader.position - _stuckSpot; here.y = 0f;
+                    _stuckRepeats = here.magnitude < 1.5f ? _stuckRepeats + 1 : 0;
+                    _stuckSpot = leader.position;
+                    Nav.LearnFromBump(leader.position, dir, _stuckRepeats);
                     Guide.Stuck(leader.position, dir);
                     _backDir = dir;
                     _backUntil = Time.time + 0.35f;
@@ -175,7 +182,9 @@ namespace SetsunaAccess
             }
             // Last few metres to an exit: straight in. Doors are solid and the exit is just behind one, so
             // sliding along the "wall" would steer off the door.
-            var intoExit = _arrive <= 0.25f && d.magnitude < 3.5f;
+            // ...but only when the route itself is about that short: a doorway round a corner inside a house is
+            // 3 m away in a straight line and 11 m on foot.
+            var intoExit = _arrive <= 0.25f && d.magnitude < 3.5f && (!routed || left < d.magnitude + 1f);
             if (Time.time < _backUntil) dir = -_backDir;                       // backing off a wall
             else if (Time.time < _detourUntil) dir = Quaternion.Euler(0f, _detourAngle, 0f) * dir;
             else if (intoExit) dir = d.normalized;

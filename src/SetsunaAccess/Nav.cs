@@ -81,7 +81,7 @@ namespace SetsunaAccess
         /// is actually there: if its layer isn't treated as blocking yet, start treating it so this session.
         /// Everything found is logged to nav.log.
         /// </summary>
-        public static void LearnFromBump(Vector3 pos, Vector3 dir)
+        public static void LearnFromBump(Vector3 pos, Vector3 dir, int repeats = 0)
         {
             Prepare();
             dir.y = 0f;
@@ -89,7 +89,13 @@ namespace SetsunaAccess
             dir.Normalize();
             var side = Vector3.Cross(Vector3.up, dir);
             var ahead = pos + dir * (CellSize * 1.2f);
-            for (var i = -1; i <= 1; i++) _blocked.Add(ToCell(ahead + side * (i * CellSize)));
+            // Bumping the same spot again means the obstacle is wider than marked (the plan kept going back through
+            // it, Mysleigh Woods): widen and deepen the blocked patch each time.
+            var half = 1 + Mathf.Min(repeats, 4);
+            var depth = repeats >= 2 ? 2 : 1;
+            for (var row = 0; row < depth; row++)
+                for (var i = -half; i <= half; i++)
+                    _blocked.Add(ToCell(ahead + dir * (row * CellSize) + side * (i * CellSize)));
             _reachDirty = true;
 
             var probe = pos + dir * 0.5f + Vector3.up * 0.8f;
@@ -123,7 +129,8 @@ namespace SetsunaAccess
         /// reachability flood's own lenient rules (no rock-face rays) with a strong pull to the middle of paths.</summary>
         public enum Mode { Full, Slim, Lenient }
 
-        public static RouteJob StartRoute(Vector3 from, Vector3 to, float goalRadius, int budget = 8000, Mode mode = Mode.Full)
+        public static RouteJob StartRoute(Vector3 from, Vector3 to, float goalRadius, int budget = 8000, Mode mode = Mode.Full,
+                                          bool needSight = false)
         {
             Prepare();
             if (_mode != mode)
@@ -140,10 +147,32 @@ namespace SetsunaAccess
             r2 *= r2;
             var goal = new Vector3(to.x, 0f, to.z);
             // Near the target and on its level (not on the floor under a ledge it stands on).
-            System.Func<Cell, bool> isGoal = c => (Center(c, 0f) - goal).sqrMagnitude <= r2 && Mathf.Abs(Y(c, to.y) - to.y) <= 3f;
+            System.Func<Cell, bool> isGoal = c => (Center(c, 0f) - goal).sqrMagnitude <= r2 && Mathf.Abs(Y(c, to.y) - to.y) <= 3f
+                                                  && (!needSight || SightTo(c, to));
             GridPath.Neighbour step = mode == Mode.Lenient ? (GridPath.Neighbour)NbRoute : NbStrict;
             var target = new Cell(Mathf.FloorToInt(to.x / CellSize), Mathf.FloorToInt(to.z / CellSize));
             return new RouteJob { Search = new GridPath.SearchJob(start, target, isGoal, step, budget, WallCost), From = from, Goal = goalRadius };
+        }
+
+        /// <summary>
+        /// A clear knee-height line from the cell to an exit point, or one that only meets a door (house doors are
+        /// solid colliders you walk into). Without it a loose exit goal could be outside the house wall, and the
+        /// straight final approach bumped the wall (Floneia Citadel).
+        /// </summary>
+        private static bool SightTo(Cell c, Vector3 target)
+        {
+            var a = Center(c, Y(c, target.y) + WallCheckHeight);
+            var b = new Vector3(target.x, target.y + WallCheckHeight, target.z);
+            RaycastHit h;
+            var mask = _groundMask | LayerMask.GetMask("HitWall");
+            if (Physics.Linecast(a, b, out h, mask, QueryTriggerInteraction.Ignore) && !IsDoor(h.collider)) return false;
+            if (Physics.Linecast(b, a, out h, mask, QueryTriggerInteraction.Ignore) && !IsDoor(h.collider)) return false;
+            return true;
+        }
+
+        private static bool IsDoor(Collider c)
+        {
+            return c != null && c.name.IndexOf("door", System.StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>Advance a route job for up to ms milliseconds; returns true when it has finished.</summary>
