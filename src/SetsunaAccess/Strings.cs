@@ -41,6 +41,11 @@ namespace SetsunaAccess
         public const string SwitchName = "Switch";
         public const string SwitchUsed = "Switch, used";
         public const string SwitchInactive = "Switch, not working yet";
+        public static string LockedChest(string key, bool have)
+        {
+            if (have) return "Locked chest, you have the " + (key.Length > 0 ? key : "key");
+            return key.Length > 0 ? "Locked chest, needs the " + key : "Locked chest, needs a key";
+        }
         public const string Person = "Person", Chest = "Chest", OpenedChest = "Opened chest",
                             SavePointName = "Save point", Sparkle = "Sparkle";
         public const string NothingSelected = "Nothing selected.";

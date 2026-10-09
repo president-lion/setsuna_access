@@ -377,3 +377,8 @@ current character already has in another slot, or whose needLevel is above the c
 then refuses silently. The mod adds "Equipped on X" to rows and speaks the reason when a greyed row is pressed.
 Build: the csproj now checks the task list (findstr, not find: Git's find shadows it) and skips installing while
 SETSUNA.exe runs.
+
+Locked chests (2026-10-09): ItemBox with gimmickParam.trigger WITH_KEY opens only if you hold the key item whose
+id is gimmickParam.argument1 (not used up). EventItemMessage has a single key, the World Key, which the story
+gives you and which opens all sealed chests (and the airship). No key lies in a map. The scanner now says "Locked
+chest, needs the <key>" or "you have the <key>". The build now installs while the game runs again (user's call).

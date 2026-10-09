@@ -36,16 +36,8 @@
     <Reference Include="$(Managed)\UnityEngine.UI.dll" Private="false" />
   </ItemGroup>
 
-  <!-- Deploy: the mod into Mods\, Prism into UserLibs\. Skipped while the game runs (see deploy.sh). -->
-  <!-- Never install over a running game: find SETSUNA.exe in the task list first. -->
-  <Target Name="CheckGameRunning" AfterTargets="Build">
-    <Exec Command="tasklist /FI &quot;IMAGENAME eq SETSUNA.exe&quot; /NH | %SystemRoot%\System32\findstr.exe /I /C:&quot;SETSUNA.exe&quot; &gt;NUL" IgnoreExitCode="true" StandardOutputImportance="low">
-      <Output TaskParameter="ExitCode" PropertyName="GameRunningCode" />
-    </Exec>
-    <Warning Condition="'$(GameRunningCode)' == '0'" Text="SETSUNA.exe is running: built but NOT installed." />
-  </Target>
-
-  <Target Name="Deploy" AfterTargets="CheckGameRunning" Condition="Exists('$(GamePath)\MelonLoader') And '$(SkipDeploy)' != 'true' And '$(GameRunningCode)' != '0'">
+  <!-- Deploy: the mod into Mods\, Prism into UserLibs\. Safe while the game runs: it keeps the copy it loaded until restarted (user OK'd this 2026-10-09). -->
+  <Target Name="Deploy" AfterTargets="Build" Condition="Exists('$(GamePath)\MelonLoader') And '$(SkipDeploy)' != 'true'">
     <MakeDir Directories="$(GamePath)\Mods;$(GamePath)\UserLibs" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GamePath)\Mods" />
     <Copy SourceFiles="..\prism\build-x86\prism.dll" DestinationFolder="$(GamePath)\UserLibs"

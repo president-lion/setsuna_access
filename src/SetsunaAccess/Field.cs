@@ -372,7 +372,7 @@ namespace SetsunaAccess
                 }
             if (want == null || want == Kind.Chest)
                 foreach (var c in Object.FindObjectsOfType<ItemBox>())
-                    Add(list, Kind.Chest, c.transform, Reflect.Get<bool>(c, "isOn") ? Strings.OpenedChest : Strings.Chest, player);
+                    Add(list, Kind.Chest, c.transform, ChestName(c), player);
             if (want == null || want == Kind.Exit)
                 foreach (var e in ExitLabels())
                     Add(list, Kind.Exit, e.Key.transform, e.Value, player);
@@ -422,6 +422,19 @@ namespace SetsunaAccess
         }
 
         /// <summary>"Switch", with whether it's been used or can't be used yet (GimmickSwitch isOn / isPower).</summary>
+        /// <summary>Chests with trigger WITH_KEY need the key item in gimmickParam.argument1 (ItemBox.GetItemWithKey;
+        /// the key is not used up). The only key in the game opens all of them.</summary>
+        private static string ChestName(ItemBox c)
+        {
+            if (Reflect.Get<bool>(c, "isOn")) return Strings.OpenedChest;
+            var gp = c.gimmickParam;
+            if (gp == null || gp.trigger != GIMMICK_TRIGGER.WITH_KEY) return Strings.Chest;
+            var keyId = Common.IntTryParse(gp.argument1);
+            ItemData key;
+            var keyName = ParameterManager.GetItemData(keyId, out key) && key != null ? TextClean.Clean(key.param.name) : "";
+            return Strings.LockedChest(keyName, ItemManager.GetHaveItemNum(keyId) > 0);
+        }
+
         private static string SwitchName(GimmickSwitch g)
         {
             if (!Reflect.Get<bool>(g, "isPower")) return Strings.SwitchInactive;
