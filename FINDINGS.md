@@ -366,3 +366,7 @@ address in SETSUNA.exe) jumped to ~97% each (92% of a 20-thread machine) and sta
 stayed ~4 ms/frame at 29 fps. One spell ended right after a battle (22:58:38). Cause unknown (no trigger common
 to both onsets: once walking in Mysleigh Woods, once selling in a shop). CpuProbe now confines such threads
 (>50% each, 6 or more) to the last two cores at lowest priority and notes it on the perf.log cpu line.
+Crash (2026-10-09): Process.GetCurrentProcess().MainModule crashed this Mono natively (access violation in
+mono.dll, game's crash folder 2026-10-09_133838) the first time the spin check ran, ~20 s after launch. The exe
+name now comes from GetModuleFileName(NULL). Never use System.Diagnostics.Process in this game. The spin check
+also needs two 10 s samples in a row now, so map loading can't trigger it.

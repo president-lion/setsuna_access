@@ -45,6 +45,7 @@ namespace SetsunaAccess
         // while the game's own frame work stayed ~4 ms. It stopped once after a battle. Once seen, those threads
         // are moved to the last two cores at lowest priority, so they can't starve the rest of the machine.
         private static string _exe;
+        private static int _spinSamples;
         private static readonly HashSet<uint> _reined = new HashSet<uint>();
 
         private static uint _mainThread;
@@ -118,7 +119,13 @@ namespace SetsunaAccess
         private static string Rein(List<KeyValuePair<uint, long>> threads, long span, int cores)
         {
             if (cores < 4) return null;
-            if (_exe == null) _exe = System.IO.Path.GetFileName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+            // Not Process.MainModule: this Mono crashed natively in it (2026-10-09, access violation in mono.dll).
+            if (_exe == null)
+            {
+                var path = new StringBuilder(260);
+                GetModuleFileName(IntPtr.Zero, path, path.Capacity);
+                _exe = System.IO.Path.GetFileName(path.ToString());
+            }
             var exe = _exe;
             var spinning = new List<uint>();
             foreach (var t in threads)
@@ -128,7 +135,9 @@ namespace SetsunaAccess
                 if (string.Equals(mod, exe, StringComparison.OrdinalIgnoreCase) && t.Value * 2 > span && !_reined.Contains(t.Key))
                     spinning.Add(t.Key);
             }
-            if (spinning.Count + _reined.Count < 6 || spinning.Count == 0) return null;
+            if (spinning.Count + _reined.Count < 6 || spinning.Count == 0) { _spinSamples = 0; return null; }
+            // Loading a map keeps the workers busy for a few seconds; a spin lasts minutes. Two samples in a row.
+            if (++_spinSamples < 2) return null;
             var n = Math.Min(cores, IntPtr.Size * 8);
             var mask = new UIntPtr((1UL << (n - 1)) | (1UL << (n - 2)));
             var done = 0;
