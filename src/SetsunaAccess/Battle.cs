@@ -108,9 +108,9 @@ namespace SetsunaAccess
             foreach (var i in targets)
             {
                 var c = Chara(i);
-                if (c != null) names.Add(Name(c));
+                if (c != null) names.Add(Name(c) + ", " + Vitals(c));
             }
-            Speech.Say(string.Join(", ", names.ToArray()));
+            Speech.Say(string.Join("; ", names.ToArray()));
         }
 
         // ---- skill / item grid ----------------------------------------------------------
@@ -133,7 +133,17 @@ namespace SetsunaAccess
             }
             if (item == null) return;
 
-            var line = Strings.Item(Ui.ReadAll(item.transform), index, count);
+            var label = Ui.ReadAll(item.transform);
+            var skill = default(SkillData);
+            var isSkill = Reflect.Int(list, "listType") == (int)UiBattleScrollList.LIST_TYPE.SKILL && item.GetSkillData(out skill);
+            // The row shows the spritnite's name, which some combos don't have: use the skill's own name.
+            if (isSkill && label.Length == 0) label = TextClean.Clean(skill.name);
+            var line = Strings.Item(label, index, count);
+            // Greyed rows (not enough MP, a combo partner not ready): UiBattleScrollItem.Update's test.
+            var user = Reflect.Get<BattleCharacter>(item, "skillUser");
+            if (isSkill && user != null
+                && !BattleCommon.IsAvailableSkill(user, skill.id, enableLog: false, ignoreActive: false, ignoreRes: false, ignoreChronoAccel: false, 100, isLook: true))
+                line += ", " + Strings.Unavailable;
             if (Reflect.Int(list, "listType") == (int)UiBattleScrollList.LIST_TYPE.SKILL)
             {
                 var res = Reflect.Get<UiBattleNeedResources>(GuiManager.BattleWindow, "uiBattleNeedRes");
