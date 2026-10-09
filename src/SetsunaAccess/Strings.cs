@@ -146,7 +146,12 @@ namespace SetsunaAccess
         public const string Upgraded = "Upgraded.";
         public static string Equipped(string name) { return "Equipped " + name; }
         private static readonly string[] StatNames = { "Attack", "Defense", "Magic attack", "Magic defense" };
-        public static string StatChange(int stat, int from, int to) { return StatNames[stat] + " " + from + " to " + to; }
+        /// <summary>This weapon's value first, then how it compares with the equipped one ("Attack 27, down 12").</summary>
+        public static string StatChange(int stat, int equipped, int value)
+        {
+            var diff = value - equipped;
+            return StatNames[stat] + " " + value + ", " + (diff > 0 ? "up " + diff : "down " + (-diff));
+        }
         public static string CountPrice(int count, string price) { return count + ", price " + price; }
         public static string Hp(int now, int max) { return "HP " + now + " of " + max; }
         public static string Mp(int now, int max) { return "MP " + now + " of " + max; }
