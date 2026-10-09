@@ -360,3 +360,9 @@ radius) meets the ramp ~0.25 m ahead, the flattened normal points straight back,
 the party sideways into the rocks. Slide now only counts upright faces (|normal.y| < 0.35) or blocking layers.
 Chests: walk-to stalled 1.3 m from a chest against its pCube1 box; the chest opens from ~2 m, so a stall within
 the arrival radius + 1 m now counts as arrived. Battle: enemies sharing a name are numbered by battle-list order.
+
+Worker-thread spin (2026-10-08): in two sessions, ~2.5 min after launch, all ~20 Unity worker threads (start
+address in SETSUNA.exe) jumped to ~97% each (92% of a 20-thread machine) and stayed there; main-thread work
+stayed ~4 ms/frame at 29 fps. One spell ended right after a battle (22:58:38). Cause unknown (no trigger common
+to both onsets: once walking in Mysleigh Woods, once selling in a shop). CpuProbe now confines such threads
+(>50% each, 6 or more) to the last two cores at lowest priority and notes it on the perf.log cpu line.

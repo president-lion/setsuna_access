@@ -34,8 +34,18 @@ namespace SetsunaAccess
         [DllImport("kernel32.dll")] private static extern bool GetModuleHandleEx(uint flags, IntPtr addr, out IntPtr module);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern uint GetModuleFileName(IntPtr module, StringBuilder name, int size);
         [DllImport("ntdll.dll")] private static extern int NtQueryInformationThread(IntPtr h, int cls, out IntPtr info, int size, IntPtr ret);
+        [DllImport("kernel32.dll")] private static extern bool SetThreadPriority(IntPtr h, int priority);
+        [DllImport("kernel32.dll")] private static extern UIntPtr SetThreadAffinityMask(IntPtr h, UIntPtr mask);
 
-        private const uint SnapThread = 4, QueryInfo = 0x40, QueryLimited = 0x800;
+        private const uint SnapThread = 4, QueryInfo = 0x40, QueryLimited = 0x800, SetInfo = 0x20;
+        private const int PriorityLowest = -2;
+
+        // Twice (2026-10-08), about 2.5 minutes into play, every Unity worker thread (~20 on the user's machine,
+        // all started in SETSUNA.exe) began spinning at ~97% each and stayed there - 92% of the whole machine -
+        // while the game's own frame work stayed ~4 ms. It stopped once after a battle. Once seen, those threads
+        // are moved to the last two cores at lowest priority, so they can't starve the rest of the machine.
+        private static string _exe;
+        private static readonly HashSet<uint> _reined = new HashSet<uint>();
 
         private static uint _mainThread;
         private static long _lastProcess, _lastWall;
@@ -87,6 +97,7 @@ namespace SetsunaAccess
                 if (first || span <= 0) return null;
 
                 threads.Sort((a, b) => b.Value.CompareTo(a.Value));
+                var reined = Rein(threads, span, cores);
                 var sb = new StringBuilder();
                 sb.Append("cpu ").Append(Pct(procDelta, span * cores)).Append("% of the machine (")
                   .Append(Pct(procDelta, span)).Append("% of one core); busiest threads:");
@@ -97,9 +108,40 @@ namespace SetsunaAccess
                       .Append(' ').Append(Pct(threads[i].Value, span)).Append('%');
                 }
                 sb.Append("; ").Append(threads.Count).Append(" threads used CPU");
+                if (reined != null) sb.Append("; ").Append(reined);
                 return sb.ToString();
             }
             catch (Exception ex) { Log.Once("CpuProbe", ex); return null; }
+        }
+
+        /// <summary>When many of the game's own worker threads spin flat out at once, confine them.</summary>
+        private static string Rein(List<KeyValuePair<uint, long>> threads, long span, int cores)
+        {
+            if (cores < 4) return null;
+            if (_exe == null) _exe = System.IO.Path.GetFileName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+            var exe = _exe;
+            var spinning = new List<uint>();
+            foreach (var t in threads)
+            {
+                string mod;
+                if (t.Key == _mainThread || !_module.TryGetValue(t.Key, out mod)) continue;
+                if (string.Equals(mod, exe, StringComparison.OrdinalIgnoreCase) && t.Value * 2 > span && !_reined.Contains(t.Key))
+                    spinning.Add(t.Key);
+            }
+            if (spinning.Count + _reined.Count < 6 || spinning.Count == 0) return null;
+            var n = Math.Min(cores, IntPtr.Size * 8);
+            var mask = new UIntPtr((1UL << (n - 1)) | (1UL << (n - 2)));
+            var done = 0;
+            foreach (var id in spinning)
+            {
+                var h = OpenThread(SetInfo | QueryInfo | QueryLimited, false, id);
+                if (h == IntPtr.Zero) continue;
+                if (SetThreadAffinityMask(h, mask) != UIntPtr.Zero) done++;
+                SetThreadPriority(h, PriorityLowest);
+                CloseHandle(h);
+                _reined.Add(id);
+            }
+            return "worker threads spinning: moved " + done + " of " + spinning.Count + " to the last 2 cores at lowest priority";
         }
 
         private static string Pct(long part, long whole) { return (100.0 * part / whole).ToString("0"); }
