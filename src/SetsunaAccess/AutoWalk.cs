@@ -35,6 +35,8 @@ namespace SetsunaAccess
         private static int _routeVersion;
         private static Vector3 _stuckSpot;
         private static int _stuckRepeats;
+        private static float _pausedAt = -10f;   // last time a menu, event or battle held the walk
+        private static bool _saidPaused;
 
         /// <summary>Seconds since the walk started (a held key's repeat shouldn't count as "stop").</summary>
         public static float Age { get { return Time.time - _startedAt; } }
@@ -90,20 +92,31 @@ namespace SetsunaAccess
                 if (_h == null || _v == null) { Stop(null); Log.Error("AutoWalk", "stick fields missing"); return; }
             }
 
+            // Menus, events and battles: hold still but keep the walk. Checked first: the arrow keys there move
+            // menu cursors and battle targets, not the party, so they mustn't cancel it (Control Home still does).
+            var gs = GameManager.NowGameState;
+            if ((gs != GAME_STATE.FIELD && gs != GAME_STATE.WORLD) || EventManager.IsEvent || UiCampManager.IsShowing)
+            {
+                _bestAt = Time.time; // paused time isn't lack of progress
+                _pausedAt = Time.time;
+                if (!_saidPaused) { _saidPaused = true; NavLog.Line("walk paused (" + gs + (EventManager.IsEvent ? ", event" : "") + ")"); }
+                return;
+            }
+            if (_saidPaused)
+            {
+                _saidPaused = false;
+                _nextCheck = Time.time + 1f;  // the party stood still meanwhile; that isn't being stuck
+                var lp = Leader();
+                if (lp != null) _lastPos = lp.position;
+                NavLog.Line("walk resumed");
+            }
             // The player took over: only a real movement key counts (axis values linger and drift).
-            if (Time.time - _startedAt > 0.3f && MovementKeyHeld())
+            if (Time.time - _startedAt > 0.3f && MovementKeyHeld() && Time.time - _pausedAt > 0.5f)
             {
                 Stop(Strings.WalkCancelled);
                 return;
             }
             if (_target == null || !_target.gameObject.activeInHierarchy) { Stop(Strings.WalkLost); return; }
-            // Menus, events and battles: hold still but keep the walk.
-            var gs = GameManager.NowGameState;
-            if ((gs != GAME_STATE.FIELD && gs != GAME_STATE.WORLD) || EventManager.IsEvent || UiCampManager.IsShowing)
-            {
-                _bestAt = Time.time; // paused time isn't lack of progress
-                return;
-            }
 
             var leader = Leader();
             if (leader == null) return;

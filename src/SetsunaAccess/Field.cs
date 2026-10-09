@@ -284,6 +284,8 @@ namespace SetsunaAccess
             if (!InField() || !_selected.gameObject.activeInHierarchy) return;
             var gs = GameManager.NowGameState;
             if (gs != GAME_STATE.FIELD && gs != GAME_STATE.WORLD) return;
+            // Quiet during dialogue, cutscenes, chest messages and menus, as in battle.
+            if (EventManager.IsEvent || GuiManager.IsShowingMessageWindow || UiCampManager.IsShowing) return;
 
             var player = Player();
             if (player == null) return;
