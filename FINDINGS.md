@@ -395,3 +395,10 @@ World map has no ground collider round Floneia Citadel (x -125..-95, z -20..8): 
 scanner hid all 55 exits. The game walks on with no ground (UpdateHeight leaves y alone when its ray misses), so
 on the world map a missing ground probe now counts as flat ground at the current height. Offline (world_leak.py)
 that no-ground area is enclosed by HitWall and doesn't leak off the map.
+
+Floneia Citadel from the world map, still "No way to walk" (2026-10-09 16:04): with no-ground fixed, every plan
+ran out of cells without reaching the goal. The gate's exit point (-110, -16) is 10 cm inside a HitWall block
+(x -111.6..-108.5, z -16.1..-14.9) at the top of a funnel 0.9-2.5 m wide between thin wall slabs. The loose exit
+goal needs a clear knee line to the point, which always met that block's face, so no cell was ever a goal.
+Offline (walls only, 0.32 m body) the way is south to z -24.5, west to x -109, then north up the funnel, 36 m.
+SightTo now ignores a wall hit within 0.6 m of the exit point.

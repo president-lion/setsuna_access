@@ -165,9 +165,20 @@ namespace SetsunaAccess
             var b = new Vector3(target.x, target.y + WallCheckHeight, target.z);
             RaycastHit h;
             var mask = _groundMask | LayerMask.GetMask("HitWall");
-            if (Physics.Linecast(a, b, out h, mask, QueryTriggerInteraction.Ignore) && !IsDoor(h.collider)) return false;
-            if (Physics.Linecast(b, a, out h, mask, QueryTriggerInteraction.Ignore) && !IsDoor(h.collider)) return false;
+            if (Physics.Linecast(a, b, out h, mask, QueryTriggerInteraction.Ignore) && !IsDoor(h.collider) && !AtPoint(h, b)) return false;
+            if (Physics.Linecast(b, a, out h, mask, QueryTriggerInteraction.Ignore) && !IsDoor(h.collider) && !AtPoint(h, b)) return false;
             return true;
+        }
+
+        /// <summary>
+        /// A wall face right at the exit point: the point itself is set into the wall it's in (Floneia Citadel's gate
+        /// on the world map is 10 cm inside a HitWall block), so the line always met that face and no cell counted
+        /// as in sight of it.
+        /// </summary>
+        private static bool AtPoint(RaycastHit h, Vector3 point)
+        {
+            var d = h.point - point; d.y = 0f;
+            return d.magnitude <= 0.6f;
         }
 
         private static bool IsDoor(Collider c)
