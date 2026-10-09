@@ -79,6 +79,7 @@ namespace SetsunaAccess
 
             // After battle: choosing which Fluxes to add.
             Hook(h, typeof(UiCampContent), "MoveButton", postfix: nameof(Flux_Move));
+            Hook(h, typeof(UiCampContent), "PressLogic", prefix: nameof(Spritnite_Press));
             Hook(h, typeof(UiResultWindow), "OpenChackSublimation", postfix: nameof(Flux_Open));
 
             // Shop quantity / price confirmation.
@@ -345,6 +346,8 @@ namespace SetsunaAccess
         // ---- flux selection -------------------------------------------------------------------
 
         private static void Flux_Move(UiCampContent __instance) { Guard("Flux.Move", () => FluxMenu.OnMove(__instance)); }
+
+        private static void Spritnite_Press(UiCampContent __instance) { Guard("Spritnite.Press", () => Spritnite.OnPress(__instance)); }
 
         private static void Flux_Open(bool _isOpen) { Guard("Flux.Open", () => FluxMenu.OnOpen(_isOpen)); }
 

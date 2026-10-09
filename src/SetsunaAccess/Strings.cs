@@ -213,6 +213,11 @@ namespace SetsunaAccess
         public static string TalismanEffect(string effect) { return "Effect: " + effect; }
         public static string TalismanFlux(string names) { return "Flux bonus: " + names; }
         public const string TalismanNoFlux = "No Flux bonus";
+        public static string EquippedOn(string name) { return "Equipped on " + name; }
+        public static string AlreadyHasKind(string name) { return "Can't choose: " + name + " already has this spritnite equipped"; }
+        public const string AlreadyInSlot = "Already in this slot";
+        public static string NeedsLevel(int level) { return "Can't choose: needs level " + level; }
+        public const string CantChoose = "Can't choose this one";
         public const string NothingForSale = "Nothing for sale.";
 
         // Magic Consortium > Obtain Spritnite.

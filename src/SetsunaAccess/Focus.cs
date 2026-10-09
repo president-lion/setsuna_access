@@ -95,6 +95,7 @@ namespace SetsunaAccess
                 line = Join(line, WeaponMenu.Compare(content));
                 line = Join(line, FluxMenu.State(content));
                 line = Join(line, Talisman.Describe(content));
+                line = Join(line, Spritnite.Describe(content));
                 line = Join(line, RowDescription(content));
             }
             return line;

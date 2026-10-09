@@ -370,3 +370,10 @@ Crash (2026-10-09): Process.GetCurrentProcess().MainModule crashed this Mono nat
 mono.dll, game's crash folder 2026-10-09_133838) the first time the spin check ran, ~20 s after launch. The exe
 name now comes from GetModuleFileName(NULL). Never use System.Diagnostics.Process in this game. The spin check
 also needs two 10 s samples in a row now, so map loading can't trigger it.
+
+Spritnite pick list (2026-10-09): UiCampContent rows of CampType.Materia (SetMateria) grey out a spritnite that is
+in any character's slot (CharacterParameter.Materia.materiaSlot[k].uniqueItemID), whose kind (param.id) the
+current character already has in another slot, or whose needLevel is above the character's level; PressLogic
+then refuses silently. The mod adds "Equipped on X" to rows and speaks the reason when a greyed row is pressed.
+Build: the csproj now checks the task list (findstr, not find: Git's find shadows it) and skips installing while
+SETSUNA.exe runs.
