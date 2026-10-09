@@ -135,7 +135,7 @@ namespace SetsunaAccess
             // Out through an exit we can walk to, round to a floor whose exit enters this one at that arrival point.
             var here = floor.id;
             var path = MapData.PathTo(here, f => string.Equals(f, here, StringComparison.OrdinalIgnoreCase),
-                                      j => Nav.CanReach(player.position, j.Pos, 3f) != Nav.Reach.No, here, arrival.Id);
+                                      j => Nav.CanReach(player.position, j.Pos, 3f, true) != Nav.Reach.No, here, arrival.Id);
             if (path != null && path.Count >= 3)
             {
                 Log.Append("nav.log", "objective: " + t.name + " is in another part of " + here + "; arrival " + arrival.Id + " "
@@ -209,7 +209,7 @@ namespace SetsunaAccess
                 default: holds = f => MapData.HasEnemyGroup(f, s.Terms); break;
             }
             var player = Leader();
-            Func<MapData.Jump, bool> reachable = j => player == null || Nav.CanReach(player.position, j.Pos, 3f) != Nav.Reach.No;
+            Func<MapData.Jump, bool> reachable = j => player == null || Nav.CanReach(player.position, j.Pos, 3f, true) != Nav.Reach.No;
             var path = MapData.PathTo(floor.id, holds, reachable, _arriveFloor, _arrivePoint)
                        ?? MapData.PathTo(floor.id, holds);
             Log.Append("nav.log", "objective elsewhere: " + s.Trigger + "/" + s.Terms + " from " + floor.id + " -> "

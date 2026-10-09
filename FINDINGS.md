@@ -402,3 +402,13 @@ ran out of cells without reaching the goal. The gate's exit point (-110, -16) is
 goal needs a clear knee line to the point, which always met that block's face, so no cell was ever a goal.
 Offline (walls only, 0.32 m body) the way is south to z -24.5, west to x -109, then north up the funnel, 36 m.
 SightTo now ignores a wall hit within 0.6 m of the exit point.
+
+Session 2026-10-09 15:50-16:45 log (Citadel fix wasn't loaded yet; the game started before it was installed):
+- Mysleigh Woods "forest part 2" (mjarea_03, (0, 36)): walled off by a placement gimmick COL_0013_01_01 using
+  the asset-bundle box mg_coll_00b (BoxCollider, HitGround layer, centre (1, 0, 35), 1 x 2 x 8 m, top 1 m), which
+  isn't in the offline scene mesh. The record carries 211010, which looks like the story progress where it changes
+  (player at 131120), so the exit is closed for now. The scanner listed it because walkable cells in the channel
+  behind the barrier are within the 3 m exit slack; reachability for exits now also needs a clear knee line to
+  the exit point (Nav.SightTo), the same test the loose route goal uses.
+- Walk-to a monster: the battle starts, the monster is gone afterwards, and it said "Target gone". After a battle
+  during the walk a vanished target now ends the walk silently.

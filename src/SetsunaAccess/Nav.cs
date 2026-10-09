@@ -228,7 +228,7 @@ namespace SetsunaAccess
         /// last finished flood fill and never waits for a new one; Unknown when there's no usable fill yet
         /// or p is beyond what it covered.
         /// </summary>
-        public static Reach CanReach(Vector3 player, Vector3 p, float slack)
+        public static Reach CanReach(Vector3 player, Vector3 p, float slack, bool needSight = false)
         {
             Prepare();
             RequestFlood(player);
@@ -249,7 +249,9 @@ namespace SetsunaAccess
                         // A surface within reach of p's height (not a floor far below a ledge it's on).
                         if (!_reach.Contains(c) || Mathf.Abs(Y(c, p.y) - p.y) > 3f) continue;
                         var d = Center(c, 0f) - new Vector3(p.x, 0f, p.z);
-                        if (d.magnitude <= slack + CellSize * 0.75f) return Reach.Yes;
+                        // Exits: walked into, so the spot must see the exit point. A walkable spot 2 m away
+                        // behind a story barrier (Mysleigh Woods' second exit, mg_coll_00b) isn't a way in.
+                        if (d.magnitude <= slack + CellSize * 0.75f && (!needSight || SightTo(c, p))) return Reach.Yes;
                     }
                 }
             if (_reachComplete) return Reach.No;

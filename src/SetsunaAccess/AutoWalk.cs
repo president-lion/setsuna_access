@@ -38,6 +38,7 @@ namespace SetsunaAccess
         private static float _pausedAt = -10f;   // last time a menu, event or battle held the walk
         private static bool _saidPaused;
         private static float _lastDistance = float.MaxValue;
+        private static bool _hadBattle; // a battle paused this walk: a monster target is gone because it was fought
 
         /// <summary>Seconds since the walk started (a held key's repeat shouldn't count as "stop").</summary>
         public static float Age { get { return Time.time - _startedAt; } }
@@ -55,6 +56,7 @@ namespace SetsunaAccess
             _active = true;
             _startedAt = Time.time;
             _lastDistance = float.MaxValue;
+            _hadBattle = false;
             _stuck = 0;
             _detourUntil = 0f;
             _nextCheck = Time.time + 1f;
@@ -101,6 +103,7 @@ namespace SetsunaAccess
             {
                 _bestAt = Time.time; // paused time isn't lack of progress
                 _pausedAt = Time.time;
+                if (gs == GAME_STATE.BATTLE) _hadBattle = true;
                 if (!_saidPaused) { _saidPaused = true; NavLog.Line("walk paused (" + gs + (EventManager.IsEvent ? ", event" : "") + ")"); }
                 return;
             }
@@ -122,6 +125,8 @@ namespace SetsunaAccess
             {
                 // An exit switches itself off as its map jump starts: that's arriving, and the new map's name follows.
                 if (_arrive <= 0.25f && _lastDistance < 4f) { Stop(null); return; }
+                // Walked to a monster and the battle started: it's gone because it was fought.
+                if (_hadBattle) { Stop(null); return; }
                 Stop(Strings.WalkLost);
                 return;
             }
