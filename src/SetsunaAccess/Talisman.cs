@@ -15,6 +15,8 @@ namespace SetsunaAccess
             var item = row.CurrentItemData;
             if (item == null || item.type != ITEM_TYPE.ACCESSORY) return null;
             var parts = new List<string>();
+            var wearer = Wearer(row.uniqueId);
+            if (wearer != null) parts.Add(Strings.EquippedOn(wearer));
 
             int command = 0, support = 0, either = 0;
             if (item.param.slotTypes != null)
@@ -46,6 +48,23 @@ namespace SetsunaAccess
                 }
             parts.Add(flux.Count > 0 ? Strings.TalismanFlux(string.Join(", ", flux.ToArray())) : Strings.TalismanNoFlux);
             return string.Join(". ", parts.ToArray());
+        }
+
+        /// <summary>Prefix of UiCampContent.PressLogic: a greyed talisman (worn by someone else) is refused silently.</summary>
+        public static void OnPress(UiCampContent row)
+        {
+            if (row == null || row.IsContentSelect || Reflect.Int(row, "type") != (int)CampType.Accessories) return;
+            var wearer = Wearer(row.uniqueId);
+            if (wearer != null) Speech.Say(Strings.EquippedOn(wearer));
+        }
+
+        /// <summary>Who wears this talisman (CharacterParameter.EquipAccessoryUniqueItemID), or null.</summary>
+        private static string Wearer(short unique)
+        {
+            if (unique <= 0 || ParameterManager.CharacterParameter == null) return null;
+            foreach (var c in ParameterManager.CharacterParameter)
+                if (c != null && c.EquipAccessoryUniqueItemID == unique) return TextClean.Clean(c.Name);
+            return null;
         }
     }
 }

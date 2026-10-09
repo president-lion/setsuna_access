@@ -359,7 +359,7 @@ namespace SetsunaAccess
 
         private static void Flux_Move(UiCampContent __instance) { Guard("Flux.Move", () => FluxMenu.OnMove(__instance)); }
 
-        private static void Spritnite_Press(UiCampContent __instance) { Guard("Spritnite.Press", () => Spritnite.OnPress(__instance)); }
+        private static void Spritnite_Press(UiCampContent __instance) { Guard("Spritnite.Press", () => { Spritnite.OnPress(__instance); Talisman.OnPress(__instance); }); }
 
         private static void Flux_Open(bool _isOpen) { Guard("Flux.Open", () => FluxMenu.OnOpen(_isOpen)); }
 
