@@ -391,3 +391,7 @@ gone" when the exit trigger switched off at the map jump; now silent. (3) World 
 Citadel: the way south is a ~1 m gap in thin HitWall lines that the party walks through but the 0.425 m planning
 body refuses; world map now has the slim fallback with a 0.32 m body (0.22 elsewhere). Offline world.pkl lacks the
 ground around the Citadel, so this was judged from the runtime log (player walked through "body overlaps HitWall").
+World map has no ground collider round Floneia Citadel (x -125..-95, z -20..8): the flood found 40 cells and the
+scanner hid all 55 exits. The game walks on with no ground (UpdateHeight leaves y alone when its ray misses), so
+on the world map a missing ground probe now counts as flat ground at the current height. Offline (world_leak.py)
+that no-ground area is enclosed by HitWall and doesn't leak off the map.

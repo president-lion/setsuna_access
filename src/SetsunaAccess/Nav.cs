@@ -743,6 +743,10 @@ namespace SetsunaAccess
             RaycastHit hit;
             var origin = new Vector3((x + 0.5f) * CellSize, refY + 1.5f, (z + 0.5f) * CellSize);
             y = Physics.Raycast(origin, Vector3.down, out hit, 1.5f + MaxDrop + 0.5f, _groundMask) ? hit.point.y : float.NaN;
+            // The world map has stretches with no ground collider at all (round Floneia Citadel). The game walks on
+            // there at the same height (UpdateHeight only moves the party when its ray hits something), and HitWall
+            // bounds the land, so on the world map missing ground is flat ground.
+            if (float.IsNaN(y) && IsWorld) y = refY;
             _probe[key] = y;
             return y;
         }
