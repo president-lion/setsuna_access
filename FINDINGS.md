@@ -342,3 +342,5 @@ yes/no rule is wrapped by FromStep, so existing tests are unchanged). Nav keeps,
 (CellAt: same surface if within 1.2 m), ground probes cached per square and 1 m of probe height, and route
 goals / reachability lookups match the target's height (within 3 m). Tests: FloodFindsTheWalkwayOverTheFloor,
 SearchCrossesOverTheWallOnTheWalkway.
+
+Talismans (2026-10-08): the effect lives only in a side panel (UiShopAccessoriesCommon.SetAccessories): slotTypes (command / passive = support / multi = either), the skill description (param.skillId) and Flux bonuses (param.sublimationId -> SublimationData.name). Talisman.Describe appends these to any UiCampContent row whose CurrentItemData is an ACCESSORY (Equip Talisman and talisman shops).

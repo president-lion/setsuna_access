@@ -201,6 +201,17 @@ namespace SetsunaAccess
         {
             return "Up and down choose a Flux, left and right turn it off or on. " + confirmKey + " adds the ones left on.";
         }
+        public static string TalismanSlots(int command, int support, int either)
+        {
+            var parts = new System.Collections.Generic.List<string>();
+            if (command > 0) parts.Add(command + " command");
+            if (support > 0) parts.Add(support + " support");
+            if (either > 0) parts.Add(either + " either kind");
+            return parts.Count == 0 ? "No spritnite slots" : "Spritnite slots: " + string.Join(", ", parts.ToArray());
+        }
+        public static string TalismanEffect(string effect) { return "Effect: " + effect; }
+        public static string TalismanFlux(string names) { return "Flux bonus: " + names; }
+        public const string TalismanNoFlux = "No Flux bonus";
         public const string NothingForSale = "Nothing for sale.";
 
         // Magic Consortium > Obtain Spritnite.
