@@ -421,3 +421,9 @@ monster's id is EnemyControl.enemyParam.id (string); its group is EnemyControl.g
 names roaming monsters by kind (EnemyCharacter.name; charaParam.Name was empty, so it said "Monster") and prefixes
 "Danger, spritnite-eaten" when the monster or anyone in its group is one. Rare pops (ObjectPlacementManager) swap
 one member for Hoot-Hoot family ids 1010000-1010002 at enemyRarePopRatio.
+
+MapData never loaded (seen in every MelonLoader log kept, from 2026-10-09 15:33 on): Cpk threw
+System.IO.InvalidDataException, a type Unity 5.2's System.dll doesn't have, so the Cpk constructor failed with a
+TypeLoadException and every cross-map lookup (N's map path, nearest save point by map path, NPC / zone lookups in
+other maps) returned nothing: "objective elsewhere ... -> no map path". Now plain Exception. Check
+MelonLoader/Latest.log for [ERROR] lines after changes; a type missing from the game's Mono only shows at run time.
