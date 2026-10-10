@@ -72,7 +72,7 @@ namespace SetsunaAccess
         internal static List<Dictionary<string, object>> ReadUtf(byte[] b, int pos)
         {
             if (b[pos] != '@' || b[pos + 1] != 'U' || b[pos + 2] != 'T' || b[pos + 3] != 'F')
-                throw new InvalidDataException("not a @UTF table");
+                throw new System.Exception("not a @UTF table");
             var baseOff = pos + 8;
             var rowsOff = (int)U32(b, pos + 8) + baseOff;
             var strOff = (int)U32(b, pos + 12) + baseOff;
@@ -139,7 +139,7 @@ namespace SetsunaAccess
                 }
                 case 0xA: v = str((int)U32(b, p)); p += 4; break;
                 case 0xB: v = null; p += 8; break; // data blobs aren't needed here
-                default: throw new InvalidDataException("@UTF type " + type);
+                default: throw new System.Exception("@UTF type " + type);
             }
             return v;
         }
