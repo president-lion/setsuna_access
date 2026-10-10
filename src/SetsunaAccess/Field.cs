@@ -402,8 +402,7 @@ namespace SetsunaAccess
                 foreach (var e in Object.FindObjectsOfType<EnemyControl>())
                     if (e.gameObject.activeInHierarchy)
                     {
-                        var en = Narration.Name(e);
-                        Add(list, Kind.Enemy, e.transform, en.Length > 0 ? en : Strings.Monster, player);
+                        Add(list, Kind.Enemy, e.transform, EnemyName(e), player);
                     }
 
             // Drop what can't be walked to (one flood fill over the same grid the routes use). Generous
@@ -421,6 +420,36 @@ namespace SetsunaAccess
 
             list.Sort((a, b) => a.Distance.CompareTo(b.Distance));
             return list;
+        }
+
+        /// <summary>
+        /// A roaming monster: its kind (EnemyCharacter.name from enemyParam.id), with a warning when it or anyone in
+        /// its group is spritnite-eaten. Those are the fourth of each family (id 10x0003, e.g. Jewelly 1060003;
+        /// BraveStoryMonster entries 86-100, "eaten away at by spritnite"), far stronger than the rest.
+        /// </summary>
+        private static string EnemyName(EnemyControl e)
+        {
+            var id = EnemyId(e);
+            EnemyCharacter data;
+            var name = id > 0 && ParameterManager.GetEnemyCharacter(id, out data) && data != null ? TextClean.Clean(data.name) : "";
+            if (name.Length == 0) name = Narration.Name(e);
+            if (name.Length == 0) name = Strings.Monster;
+            var eaten = IsSpritniteEaten(id);
+            if (!eaten && e.group != null && e.group.partyMembers != null)
+                foreach (var m in e.group.partyMembers)
+                    if (m != null && IsSpritniteEaten(EnemyId(m))) { eaten = true; break; }
+            return eaten ? Strings.SpritniteEaten(name) : name;
+        }
+
+        private static int EnemyId(EnemyControl e)
+        {
+            int id;
+            return e != null && e.enemyParam != null && int.TryParse((e.enemyParam.id ?? "").Trim('int.TryParse(e.enemyParam.id, out id)', ' '), out id) ? id : 0;
+        }
+
+        private static bool IsSpritniteEaten(int id)
+        {
+            return id >= 1000000 && id < 1150000 && id % 10000 == 3;
         }
 
         /// <summary>"Switch", with whether it's been used or can't be used yet (GimmickSwitch isOn / isPower).</summary>

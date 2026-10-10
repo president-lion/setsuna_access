@@ -412,3 +412,12 @@ Session 2026-10-09 15:50-16:45 log (Citadel fix wasn't loaded yet; the game star
   the exit point (Nav.SightTo), the same test the loose route goal uses.
 - Walk-to a monster: the battle starts, the monster is gone afterwards, and it said "Target gone". After a battle
   during the walk a vanished target now ends the walk silently.
+
+Spritnite-eaten monsters (2026-10-09): the bestiary (BraveStoryMonster + Message, entries 86-100, "eaten away at
+by spritnite") maps them to enemy ids 1000003, 1010003 ... 1140003: the fourth (xx0003) of each family (Rocky,
+Zoot-Hoot, Stone Flapper, Fallout Shell, Atomic Puff-Puff, Maloompa, Jewelly, Silvara, Magiconda, Glowly-Poly,
+Crystal Shroomback, Southpaw, Digi Deermon, Stoniel, Dinotaurus Crystallus). No flag on EnemyCharacter. A field
+monster's id is EnemyControl.enemyParam.id (string); its group is EnemyControl.group.partyMembers. The scanner now
+names roaming monsters by kind (EnemyCharacter.name; charaParam.Name was empty, so it said "Monster") and prefixes
+"Danger, spritnite-eaten" when the monster or anyone in its group is one. Rare pops (ObjectPlacementManager) swap
+one member for Hoot-Hoot family ids 1010000-1010002 at enemyRarePopRatio.

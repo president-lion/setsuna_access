@@ -189,6 +189,7 @@ namespace SetsunaAccess
         public static string PartyNow(string names) { return "Battle party now " + names; }
         public static string PickReserve(string who) { return who + " chosen. Now pick who to swap in from the reserve"; }
         public static string PickSlot(string who) { return who + " chosen. Pick a battle party slot to swap with"; }
+        public static string SpritniteEaten(string name) { return "Danger, spritnite-eaten " + name; }
         public static string PageOf(int page, int max) { return "Page " + page + " of " + max; }
         public static string MomentumCharged(string name, int stock) { return name + " Momentum " + stock; }
         public static string BattleStart(string enemies)
