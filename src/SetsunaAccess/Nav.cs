@@ -299,6 +299,7 @@ namespace SetsunaAccess
         /// <summary>Per frame: advance the background flood for at most ~2 ms.</summary>
         public static void Tick()
         {
+            if (_trailDirty && Time.unscaledTime - _trailSavedAt > 30f) SaveTrail();
             if (_job == null) return;
             if (Application.loadedLevelName != _scene) { _job = null; return; }
             _watch.Reset();
@@ -451,9 +452,11 @@ namespace SetsunaAccess
             var scene = Application.loadedLevelName;
             if (scene != _scene)
             {
+                SaveTrail();
                 _scene = scene;
                 _walked.Clear();
                 _walkedY.Clear();
+                LoadTrail();
                 ResetSurfaces();
                 _blocked.Clear();
                 _wallCost.Clear();
@@ -538,7 +541,68 @@ namespace SetsunaAccess
             _walkedY[c] = y;
             _probe[new Cell(c.X, c.Z, Mathf.FloorToInt(y))] = y;
             _blocked.Remove(c);
-            if (_walked.Add(c) && _reach != null && !_reach.Contains(c)) _reachDirty = true;
+            if (!_walked.Add(c)) return;
+            if (_reach != null && !_reach.Contains(c)) _reachDirty = true;
+            if (IsWorld) _trailDirty = true;
+        }
+
+        // ---- remembered trails ------------------------------------------------------------
+        // The world map's walls are rows of thin HitWall slabs, and the party slips through gaps the probes call
+        // closed (Twallusk Mountain's far side to Floeberg Waters: a 1.2 m diagonal gap between slab ends). Every
+        // square the party walks there is kept in UserData\SetsunaAccess\trails\<scene>.txt and loaded on each
+        // visit, so a way found by hand once is a way walk-to and the scanner know from then on.
+
+        private static bool _trailDirty;
+        private static float _trailSavedAt;
+
+        private static string TrailFile(string scene)
+        {
+            return string.IsNullOrEmpty(Log.Dir) || string.IsNullOrEmpty(scene) ? null
+                 : System.IO.Path.Combine(System.IO.Path.Combine(Log.Dir, "trails"), scene + ".txt");
+        }
+
+        private static void SaveTrail()
+        {
+            if (!_trailDirty || !IsWorld) return;
+            _trailDirty = false;
+            _trailSavedAt = Time.unscaledTime;
+            var path = TrailFile(_scene);
+            if (path == null) return;
+            try
+            {
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+                var sb = new System.Text.StringBuilder();
+                foreach (var kv in _walkedY)
+                    sb.Append(kv.Key.X).Append(' ').Append(kv.Key.Z).Append(' ').Append(kv.Key.Level).Append(' ')
+                      .Append(kv.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)).Append('\n');
+                System.IO.File.WriteAllText(path, sb.ToString());
+            }
+            catch (System.Exception ex) { Log.Once("Nav.SaveTrail", ex); }
+        }
+
+        private static void LoadTrail()
+        {
+            _trailDirty = false;
+            if (!IsWorld) return;
+            var path = TrailFile(_scene);
+            if (path == null || !System.IO.File.Exists(path)) return;
+            try
+            {
+                var n = 0;
+                foreach (var line in System.IO.File.ReadAllLines(path))
+                {
+                    var p = line.Split(' ');
+                    int x, z, level; float y;
+                    if (p.Length < 4 || !int.TryParse(p[0], out x) || !int.TryParse(p[1], out z) || !int.TryParse(p[2], out level)
+                        || !float.TryParse(p[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out y)) continue;
+                    var c = new Cell(x, z, level);
+                    _walked.Add(c);
+                    _walkedY[c] = y;
+                    n++;
+                }
+                NavLog.Line("trail: " + n + " walked squares remembered for " + _scene);
+            }
+            catch (System.Exception ex) { Log.Once("Nav.LoadTrail", ex); }
         }
 
         private static bool Walked(Cell from, Cell to) { return _walked.Contains(from) && _walked.Contains(to); }

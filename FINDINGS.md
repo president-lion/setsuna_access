@@ -427,3 +427,12 @@ System.IO.InvalidDataException, a type Unity 5.2's System.dll doesn't have, so t
 TypeLoadException and every cross-map lookup (N's map path, nearest save point by map path, NPC / zone lookups in
 other maps) returned nothing: "objective elsewhere ... -> no map path". Now plain Exception. Check
 MelonLoader/Latest.log for [ERROR] lines after changes; a type missing from the game's Mono only shows at run time.
+
+Twallusk Mountain's far side to Floeberg Waters (2026-10-09 22:44): the world map walls there are rows of thin
+HitWall slabs (-0.5..2 m high, ~0.5 m thick, HitWall#2459). The party got out of the pocket at the ruins
+entrance (-239, 83.9) by going south to (-243, 77) and west along z 76.2 through a ~1.2 m diagonal gap between
+slab ends near (-246.5, 76), then south-west to Floeberg's entrance (-256, 47.3). Probes and the offline
+walls-only flood (even with no body width) call the pocket closed. Remembered trails: world-map squares the party
+walks are saved to UserData\SetsunaAccess\trails\<scene>.txt (on scene change and every 30 s) and loaded on each
+visit; walked-to-walked steps are always allowed, so a way found by hand once is routable afterwards. Seeded
+trails\ma_0000_01.txt from this walk's nav.log positions.
