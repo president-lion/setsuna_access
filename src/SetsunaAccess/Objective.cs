@@ -27,6 +27,7 @@ namespace SetsunaAccess
 
         public static void Find()
         {
+            if (!Settings.Objective) { Speech.Say(Strings.ObjectiveDisabled); return; }
             if (!Application.loadedLevelName.Contains("_") || UiCampManager.IsShowing) return;
             var steps = CurrentSteps();
             Log.Append("nav.log", "objective: progress " + EventManager.EventProgression + ", " + steps.Count + " steps: "
@@ -156,6 +157,7 @@ namespace SetsunaAccess
         /// </summary>
         private static bool Switch(Transform player, string name, Vector3 target)
         {
+            if (!Settings.ObjectiveHints) return false;
             var tele = Field.TeleporterToward(target);
             if (tele != null) { Field.SelectSwitch(tele, Strings.ObjectiveViaTeleporter(name)); return true; }
             GimmickSwitch best = null;

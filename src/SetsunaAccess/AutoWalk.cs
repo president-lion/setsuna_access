@@ -99,7 +99,7 @@ namespace SetsunaAccess
             // Menus, events and battles: hold still but keep the walk. Checked first: the arrow keys there move
             // menu cursors and battle targets, not the party, so they mustn't cancel it (Control Home still does).
             var gs = GameManager.NowGameState;
-            if ((gs != GAME_STATE.FIELD && gs != GAME_STATE.WORLD) || EventManager.IsEvent || UiCampManager.IsShowing)
+            if ((gs != GAME_STATE.FIELD && gs != GAME_STATE.WORLD) || EventManager.IsEvent || UiCampManager.IsShowing || Settings.Open)
             {
                 _bestAt = Time.time; // paused time isn't lack of progress
                 _pausedAt = Time.time;

@@ -35,6 +35,23 @@ namespace SetsunaAccess
             _entry = cat.CreateEntry("FrameCap", 30, "Frame rate cap (0 = game default vsync)");
         }
 
+        /// <summary>The Control M menu's value text.</summary>
+        public static string Describe()
+        {
+            if (_entry == null) return "";
+            return _entry.Value > 0 ? Strings.FrameCapValue(_entry.Value) : Strings.FrameCapGame;
+        }
+
+        /// <summary>The Control M menu: step through 30, 45, 60 and the game's own setting.</summary>
+        public static void Step(int step)
+        {
+            var cur = System.Array.IndexOf(Choices, _entry.Value);
+            if (cur < 0) cur = 0;
+            _entry.Value = Choices[(cur + step + Choices.Length) % Choices.Length];
+            MelonPreferences.Save();
+            _restored = false;
+        }
+
         public static void Cycle()
         {
             var cur = System.Array.IndexOf(Choices, _entry.Value);

@@ -13,7 +13,7 @@ namespace SetsunaAccess
     /// </summary>
     internal static class Narration
     {
-        public static bool Enabled = true;
+        public static bool Enabled { get { return Settings.SceneDescriptions; } }
 
         private static readonly List<string> _pending = new List<string>();
         private static float _pendingSince;

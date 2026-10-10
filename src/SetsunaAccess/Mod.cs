@@ -17,6 +17,7 @@ namespace SetsunaAccess
             Speech.Init("auto");
             Patches.Apply(new HarmonyLib.Harmony("SetsunaAccess"));
             FrameCap.Init();
+            Settings.Init();
             Speech.Say(Strings.Loaded);
         }
 
@@ -93,6 +94,8 @@ namespace SetsunaAccess
                 return;
             }
             if (TextEntry.Active) { TextEntry.Tick(); return; } // typing a name: no other mod keys
+            if (ctrl && Pressed(KeyCode.M)) { Settings.Toggle(); return; }
+            if (Settings.Open) { Settings.Tick(); return; }
             if (Pressed(KeyCode.F1)) Speech.Say(Strings.Help + " " + GameKeys());
             if (f2) FrameCap.Cycle();
             if (Pressed(KeyCode.F3)) Speech.Repeat();
@@ -106,8 +109,8 @@ namespace SetsunaAccess
             if (Pressed(KeyCode.T) && !typing) Battle.SayTurn();
             if (Pressed(KeyCode.V) && !typing)
             {
-                Narration.Enabled = !Narration.Enabled;
-                Speech.Say(Narration.Enabled ? Strings.NarrationOn : Strings.NarrationOff);
+                Settings.SceneDescriptions = !Settings.SceneDescriptions;
+                Speech.Say(Settings.SceneDescriptions ? Strings.NarrationOn : Strings.NarrationOff);
             }
             if (Pressed(KeyCode.PageUp)) { if (ctrl) Field.NextCategory(-1); else Field.Cycle(-1); }
             if (Pressed(KeyCode.PageDown)) { if (ctrl) Field.NextCategory(1); else Field.Cycle(1); }

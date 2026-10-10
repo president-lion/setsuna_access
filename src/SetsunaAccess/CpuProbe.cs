@@ -98,7 +98,7 @@ namespace SetsunaAccess
                 if (first || span <= 0) return null;
 
                 threads.Sort((a, b) => b.Value.CompareTo(a.Value));
-                var reined = Rein(threads, span, cores);
+                var reined = Settings.CpuGuard ? Rein(threads, span, cores) : null;
                 var sb = new StringBuilder();
                 sb.Append("cpu ").Append(Pct(procDelta, span * cores)).Append("% of the machine (")
                   .Append(Pct(procDelta, span)).Append("% of one core); busiest threads:");

@@ -22,7 +22,16 @@ namespace SetsunaAccess
 
         // The Enter that finishes typing must not reach the game in the same frame either.
         private static int _releaseFrame = -1;
-        public static bool Blocking { get { return Active || Time.frameCount <= _releaseFrame; } }
+        public static bool Blocking { get { return Active || _held || Time.frameCount <= _releaseFrame; } }
+
+        private static bool _held;
+
+        /// <summary>Keep the game from seeing keys while a mod menu is open (Control M settings).</summary>
+        public static void Hold(bool on)
+        {
+            _held = on;
+            if (!on) _releaseFrame = Time.frameCount + 1; // the closing key must not reach the game either
+        }
 
         public static void Begin(string prompt, string initial, Action<string> done)
         {

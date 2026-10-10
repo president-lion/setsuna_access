@@ -563,7 +563,7 @@ namespace SetsunaAccess
 
         private static void SaveTrail()
         {
-            if (!_trailDirty || !IsWorld) return;
+            if (!_trailDirty || !IsWorld || !Settings.Trails) return;
             _trailDirty = false;
             _trailSavedAt = Time.unscaledTime;
             var path = TrailFile(_scene);
@@ -583,7 +583,7 @@ namespace SetsunaAccess
         private static void LoadTrail()
         {
             _trailDirty = false;
-            if (!IsWorld) return;
+            if (!IsWorld || !Settings.Trails) return;
             var path = TrailFile(_scene);
             if (path == null || !System.IO.File.Exists(path)) return;
             try

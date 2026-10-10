@@ -16,7 +16,7 @@ namespace SetsunaAccess
             if (item == null || item.type != ITEM_TYPE.ACCESSORY) return null;
             var parts = new List<string>();
             var wearer = Wearer(row.uniqueId);
-            if (wearer != null) parts.Add(Strings.EquippedOn(wearer));
+            if (wearer != null && Settings.EquippedOn) parts.Add(Strings.EquippedOn(wearer));
 
             int command = 0, support = 0, either = 0;
             if (item.param.slotTypes != null)

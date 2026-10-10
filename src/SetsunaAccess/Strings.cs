@@ -39,6 +39,50 @@ namespace SetsunaAccess
         public const string DoorLockedHaveKey = "Door, locked, you have the key";
         public const string DoorSwitch = "Door, opened by a switch";
         public const string SwitchName = "Switch";
+
+        // Control M settings menu.
+        public const string SettingsTitle = "Accessibility settings. Up and down choose, left, right or Enter change, H explains, Escape closes";
+        public const string SettingsClosed = "Settings closed";
+        public const string WalkToDisabled = "Walk to is turned off in the settings, Control M";
+        public const string ObjectiveDisabled = "The story objective key is turned off in the settings, Control M";
+        public const string OptWalkTo = "Walk to the selected object, Control Home";
+        public const string OptWalkToHelp = "Control Home walks the party to whatever the scanner has selected, finding the way round walls. Off: you walk everywhere yourself; the scanner and beacon still work.";
+        public const string OptObjective = "Story objective key, N";
+        public const string OptObjectiveHelp = "N finds where the story goes next, on this map or through the exits, and selects it. Off: N does nothing.";
+        public const string OptHints = "Objective puzzle hints";
+        public const string OptHintsHelp = "When the way is cut off, N points you at a switch or teleporter that opens it. Off: N only says where to go, and you work out how.";
+        public const string OptBeacon = "Beacon tone toward the selection, End";
+        public const string OptBeaconHelp = "A repeating tone that pans and rises toward the selected object, following the walkable way. End also turns it on and off.";
+        public const string OptHide = "Hide things you can't walk to, Shift End";
+        public const string OptHideHelp = "The scanner leaves out things there's no walkable way to from where you stand. Off: everything nearby is listed.";
+        public const string OptTrails = "Remember paths walked on the world map";
+        public const string OptTrailsHelp = "Squares you walk on the world map are saved, so gaps you found by hand become routes for walk to. Off: nothing new is saved or loaded.";
+        public const string OptBump = "Bump sound";
+        public const string OptBumpHelp = "A low thud when you push into a wall and don't move.";
+        public const string OptDanger = "Spritnite-eaten monster warnings";
+        public const string OptDangerHelp = "The scanner says Danger before the strong spritnite-eaten monsters and groups that include one.";
+        public const string OptScenes = "Scene descriptions, V";
+        public const string OptScenesHelp = "Describes what characters do in cutscenes: moving, appearing, effects. V also turns this on and off.";
+        public const string OptBridges = "Bridge announcements";
+        public const string OptBridgesHelp = "Says when a switch moves a bridge or walkway, and which way it is.";
+        public const string OptMomentum = "Momentum tone";
+        public const string OptMomentumHelp = "A high beep in battle when the Momentum button timing window opens.";
+        public const string OptReady = "Battle ready announcements";
+        public const string OptReadyHelp = "Says when another character becomes ready while you're choosing for someone.";
+        public const string OptHud = "Battle damage and healing reports";
+        public const string OptHudHelp = "Reads the numbers that pop up in battle: damage, healing, misses, status changes.";
+        public const string OptPositions = "Menu positions";
+        public const string OptPositionsHelp = "Says where you are in a menu, like 3 of 7.";
+        public const string OptDescriptions = "Item and tech descriptions in menus";
+        public const string OptDescriptionsHelp = "Reads an item's or tech's description after its name in the camp and shop menus.";
+        public const string OptEquipped = "Who has it equipped";
+        public const string OptEquippedHelp = "Spritnites and talismans say which character has them equipped.";
+        public const string OptFrameCap = "Frame rate cap, F2";
+        public const string OptFrameCapHelp = "Limits the frame rate to lower CPU use: 30, 45, 60, or the game's own setting. Applies at once.";
+        public const string OptCpu = "CPU spin guard";
+        public const string OptCpuHelp = "When the game's worker threads spin flat out, about two and a half minutes into a session, the mod moves them to two cores at low priority. Off only if you suspect it causes trouble.";
+        public static string FrameCapValue(int fps) { return fps + " frames per second"; }
+        public const string FrameCapGame = "game's own setting";
         public const string AncientSwitch = "Ancient switch";
         public const string BridgeMoved = "A bridge moved";
         public const string AncientSwitchUsed = "Ancient switch, used";
@@ -63,7 +107,7 @@ namespace SetsunaAccess
         public const string BeaconOn = "Beacon on.", BeaconOff = "Beacon off.";
         public const string UnknownPlace = "Unknown place.";
         public const string Help =
-            "F1 help. F2 frame rate cap, to lower CPU use. Control F2 rename the selected scanner object. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
+            "F1 help. Control M accessibility settings, to turn features on and off. F2 frame rate cap, to lower CPU use. Control F2 rename the selected scanner object. Z location. F3 repeat. Page up and page down, previous and next nearby object. " +
             "Control page up and page down, scanner category. Home, where is the selected object. " +
             "Control home, walk to it; any movement key stops. End, beacon tone toward it. Shift end, show or hide unreachable things. P party status. G gold. N story objective, and selects it. T in battle, whose turn it is. L nearest save point, and selects the way there. V scene descriptions on or off. F11 screen text dump.";
         public static string DefaultName(string name) { return "Default: " + name; }

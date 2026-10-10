@@ -93,7 +93,7 @@ namespace SetsunaAccess
 
             int index, count;
             Position(choice, out index, out count);
-            var line = count > 0 ? Strings.Item(label, index, count) : label;
+            var line = count > 0 && Settings.Positions ? Strings.Item(label, index, count) : label;
 
             var content = choice as UiCampContent;
             if (content != null)
@@ -101,8 +101,8 @@ namespace SetsunaAccess
                 line = Join(line, WeaponMenu.Compare(content));
                 line = Join(line, FluxMenu.State(content));
                 line = Join(line, Talisman.Describe(content));
-                line = Join(line, Spritnite.Describe(content));
-                line = Join(line, RowDescription(content));
+                if (Settings.EquippedOn) line = Join(line, Spritnite.Describe(content));
+                if (Settings.Descriptions) line = Join(line, RowDescription(content));
             }
             return line;
         }

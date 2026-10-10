@@ -85,7 +85,7 @@ namespace SetsunaAccess
             if (now >= 0 && now != playerIndex)
             {
                 var c = Chara(playerIndex);
-                if (c != null) Speech.Say(Strings.Ready(Name(c)), false);
+                if (c != null && Settings.ReadyAnnouncements) Speech.Say(Strings.Ready(Name(c)), false);
             }
         }
 
@@ -163,7 +163,7 @@ namespace SetsunaAccess
             var name = c == null ? "" : Name(c);
             if (type == UiBattleWindow.HUD_TXT_TYPE.MISS && string.IsNullOrEmpty(value))
                 value = Reflect.Get<string>(win, "missStr");
-            _hud.Add(Strings.Hud(type.ToString(), name, TextClean.Clean(value)));
+            if (Settings.BattleEvents) _hud.Add(Strings.Hud(type.ToString(), name, TextClean.Clean(value)));
         }
 
         public static void OnSkillName(string text, bool isEnemy)

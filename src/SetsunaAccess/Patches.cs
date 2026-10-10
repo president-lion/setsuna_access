@@ -551,7 +551,7 @@ namespace SetsunaAccess
             Guard("Battle.Setsuna", () => Speech.Say(TextClean.Clean(setsunaSysName), false));
         }
 
-        private static void Battle_MomentumWindow() { Guard("Battle.Momentum", Tones.Momentum); }
+        private static void Battle_MomentumWindow() { if (Settings.MomentumTone) Guard("Battle.Momentum", Tones.Momentum); }
 
         private static void Battle_AutoSetsuna(UiBattleWindow __instance)
         {

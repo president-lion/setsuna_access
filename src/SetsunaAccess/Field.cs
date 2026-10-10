@@ -35,8 +35,7 @@ namespace SetsunaAccess
         private static string _selectedName;
         private static Kind _selectedKind;
         private static string _lastTelop;
-        private static bool _beacon;
-        private static bool _filterUnreachable = true;
+
         private static int _hidden;
         private static bool _saidNoPath;
         private static float _nextBeep;
@@ -103,8 +102,8 @@ namespace SetsunaAccess
         /// <summary>Shift+End: show or hide things there's no walkable way to.</summary>
         public static void ToggleReachFilter()
         {
-            _filterUnreachable = !_filterUnreachable;
-            Speech.Say(_filterUnreachable ? Strings.FilterOn : Strings.FilterOff);
+            Settings.HideUnreachable = !Settings.HideUnreachable;
+            Speech.Say(Settings.HideUnreachable ? Strings.FilterOn : Strings.FilterOff);
         }
 
         public static void Cycle(int step)
@@ -215,6 +214,7 @@ namespace SetsunaAccess
         public static void WalkToSelected()
         {
             if (!InField()) return;
+            if (!Settings.WalkTo) { if (AutoWalk.Active) AutoWalk.Stop(null); Speech.Say(Strings.WalkToDisabled); return; }
             if (AutoWalk.Active)
             {
                 // A held Control+Home repeats; only a deliberate second press stops the walk.
@@ -229,8 +229,8 @@ namespace SetsunaAccess
 
         public static void ToggleBeacon()
         {
-            _beacon = !_beacon;
-            Speech.Say(_beacon ? Strings.BeaconOn : Strings.BeaconOff);
+            Settings.Beacon = !Settings.Beacon;
+            Speech.Say(Settings.Beacon ? Strings.BeaconOn : Strings.BeaconOff);
         }
 
         // Bump detection: the player is pushing a direction but the leader isn't moving.
@@ -262,7 +262,7 @@ namespace SetsunaAccess
             moved.y = 0f;
             if (moved.magnitude < 0.08f && now >= _nextBump)
             {
-                Tones.Bump();
+                if (Settings.BumpSound) Tones.Bump();
                 _nextBump = now + 0.45f;
                 // Teach the route finder about whatever is here, so the beacon stops pointing into it.
                 if (Guide.Target != null && !AutoWalk.Active)
@@ -283,7 +283,7 @@ namespace SetsunaAccess
         {
             BumpTick();
             if (InField()) GimmickTick();
-            if (!_beacon || _selected == null || Time.unscaledTime < _nextBeep) return;
+            if (!Settings.Beacon || _selected == null || Time.unscaledTime < _nextBeep) return;
             if (!InField() || !_selected.gameObject.activeInHierarchy) return;
             var gs = GameManager.NowGameState;
             if (gs != GAME_STATE.FIELD && gs != GAME_STATE.WORLD) return;
@@ -412,7 +412,7 @@ namespace SetsunaAccess
             // reach: shopkeepers talk across counters, exits sit past the walkable edge. Anything beyond the
             // area the fill covered stays listed.
             _hidden = 0;
-            if (_filterUnreachable)
+            if (Settings.HideUnreachable)
                 list.RemoveAll(t =>
                 {
                     var reach = Nav.CanReach(player.position, t.Transform.position, ReachSlack(t.Kind), t.Kind == Kind.Exit);
@@ -441,7 +441,7 @@ namespace SetsunaAccess
             if (!eaten && e.group != null && e.group.partyMembers != null)
                 foreach (var m in e.group.partyMembers)
                     if (m != null && IsSpritniteEaten(EnemyId(m))) { eaten = true; break; }
-            return eaten ? Strings.SpritniteEaten(name) : name;
+            return eaten && Settings.DangerWarnings ? Strings.SpritniteEaten(name) : name;
         }
 
         private static int EnemyId(EnemyControl e)
@@ -578,7 +578,7 @@ namespace SetsunaAccess
                 bool was;
                 var known = _bridges.TryGetValue(b.GetInstanceID(), out was);
                 _bridges[b.GetInstanceID()] = on;
-                if (speak && known && was != on) Speech.Say(Describe(Strings.BridgeMoved, b.transform), false);
+                if (speak && known && was != on && Settings.BridgeAnnouncements) Speech.Say(Describe(Strings.BridgeMoved, b.transform), false);
             }
         }
 
@@ -718,7 +718,7 @@ namespace SetsunaAccess
                 for (var i = 1; i < path.Count; i++) route.Add(MapData.FloorName(path[i]));
                 line += ", " + Strings.Through(route);
             }
-            if (best != null && player != null && Nav.CanReach(player.position, best.transform.position, 3f, true) == Nav.Reach.No)
+            if (best != null && player != null && Settings.ObjectiveHints && Nav.CanReach(player.position, best.transform.position, 3f, true) == Nav.Reach.No)
             {
                 var tele = TeleporterToward(best.transform.position);
                 if (tele != null)
