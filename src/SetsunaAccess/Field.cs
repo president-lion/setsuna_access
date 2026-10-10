@@ -471,8 +471,83 @@ namespace SetsunaAccess
 
         private static string SwitchName(GimmickSwitch g)
         {
-            if (!Reflect.Get<bool>(g, "isPower")) return Strings.SwitchInactive;
+            var power = Reflect.Get<bool>(g, "isPower");
+            // GimmickSwitch.switchType, from the model name (mg_swtc_01 lever, _02 ancient switch, _03 teleporter).
+            var type = Reflect.Int(g, "switchType");
+            if (type == 3)
+            {
+                var jump = TeleportJump(g);
+                string name;
+                Vector3 dest;
+                if (jump == null) name = Strings.Teleporter;
+                else if (TeleportDest(jump, out dest))
+                {
+                    Vector2 screen;
+                    var dist = Relative(g.transform.position, dest, out screen);
+                    name = Strings.TeleporterHere(Strings.Direction(Octant(screen)), Mathf.RoundToInt(dist));
+                }
+                else name = Strings.TeleporterTo(PartName(jump.mapJumpParam.jumpMapName));
+                return power ? name : name + ", " + Strings.NotWorkingYet;
+            }
+            if (!power) return Strings.SwitchInactive;
+            if (type == 2) return Reflect.Get<bool>(g, "isOn") ? Strings.AncientSwitchUsed : Strings.AncientSwitch;
             return Reflect.Get<bool>(g, "isOn") ? Strings.SwitchUsed : Strings.SwitchName;
+        }
+
+        /// <summary>The map jump a teleporter switch sets off (GimmickSwitch.actionObj, tagged MapJump), or null.</summary>
+        private static MapJump TeleportJump(GimmickSwitch g)
+        {
+            if (Reflect.Int(g, "switchType") != 3) return null;
+            var prop = typeof(GimmickSwitch).GetProperty("actionObj", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var go = prop == null ? null : prop.GetValue(g, null) as GameObject;
+            return go == null ? null : go.GetComponentInChildren<MapJump>();
+        }
+
+        /// <summary>Where a jump within this same map lands (its arrival point), for teleporters.</summary>
+        private static bool TeleportDest(MapJump j, out Vector3 dest)
+        {
+            dest = Vector3.zero;
+            var floor = SceneManager.CurrentFloorInfo;
+            if (j == null || floor == null || !string.Equals(j.mapJumpParam.jumpMapName, floor.id, System.StringComparison.OrdinalIgnoreCase)) return false;
+            foreach (var a in MapData.Jumps(floor.id, true))
+                if (a.Id == j.mapJumpParam.jumpToTransform) { dest = a.Pos; return true; }
+            return false;
+        }
+
+        /// <summary>
+        /// A teleporter you can walk to whose landing spot is much nearer the target than you are: Archimell
+        /// Ruins' far exit is only reached by teleporting. Null if none.
+        /// </summary>
+        public static GimmickSwitch TeleporterToward(Vector3 target)
+        {
+            var player = Player();
+            if (player == null) return null;
+            var here = target - player.position; here.y = 0f;
+            GimmickSwitch best = null;
+            var bestD = here.magnitude - 5f;
+            foreach (var g in Object.FindObjectsOfType<GimmickSwitch>())
+            {
+                if (!g.gameObject.activeInHierarchy || !Reflect.Get<bool>(g, "isPower")) continue;
+                Vector3 dest;
+                if (!TeleportDest(TeleportJump(g), out dest)) continue;
+                if (Nav.CanReach(player.position, g.transform.position, 1.5f) == Nav.Reach.No) continue;
+                var d = target - dest; d.y = 0f;
+                if (d.magnitude < bestD) { bestD = d.magnitude; best = g; }
+            }
+            if (best != null) NavLog.Line("teleporter toward " + NavLog.P(target) + ": " + best.name + " " + NavLog.P(best.transform.position));
+            return best;
+        }
+
+        /// <summary>A map's name, with its area number when this map has several areas of that name (Archimell Ruins).</summary>
+        private static string PartName(string floorId)
+        {
+            var name = MapData.FloorName(floorId);
+            var floor = SceneManager.CurrentFloorInfo;
+            var here = floor == null ? "" : TextClean.Clean(floor.mapName);
+            int part;
+            if (name.Length > 0 && name == here && floorId != null && floorId.Length >= 2 && int.TryParse(floorId.Substring(floorId.Length - 2), out part))
+                return Strings.AreaOf(name, part);
+            return name;
         }
 
         /// <summary>A door and how it opens: open, locked (with or without the key), or worked by a switch.</summary>
@@ -486,6 +561,24 @@ namespace SetsunaAccess
                     return key > 0 && ItemManager.GetHaveItemNum(key) > 0 ? Strings.DoorLockedHaveKey : Strings.DoorLocked;
                 case GIMMICK_TRIGGER.SWITCH: return Strings.DoorSwitch;
                 default: return Strings.Door;
+            }
+        }
+
+        // Bridges and ancient walkways (BridgeControl, e.g. Archimell Ruins' mg_arct_03) by instance: their last state.
+        private static readonly Dictionary<int, bool> _bridges = new Dictionary<int, bool>();
+        private static string _bridgeScene;
+
+        /// <summary>A switch moved a bridge somewhere: say which way it is (the game only shows it).</summary>
+        private static void AnnounceBridges(bool speak)
+        {
+            if (_bridgeScene != Application.loadedLevelName) { _bridges.Clear(); _bridgeScene = Application.loadedLevelName; speak = false; }
+            foreach (var b in Object.FindObjectsOfType<BridgeControl>())
+            {
+                var on = Reflect.Get<bool>(b, "isOn");
+                bool was;
+                var known = _bridges.TryGetValue(b.GetInstanceID(), out was);
+                _bridges[b.GetInstanceID()] = on;
+                if (speak && known && was != on) Speech.Say(Describe(Strings.BridgeMoved, b.transform), false);
             }
         }
 
@@ -504,6 +597,7 @@ namespace SetsunaAccess
                 sig = sig * 31 + (Reflect.Get<bool>(g, "isOn") ? 1 : 0) + (g.isGimmickPlaying ? 2 : 0) + (g.gameObject.activeInHierarchy ? 4 : 0);
             if (_logCollidersAt > 0f && Time.unscaledTime >= _logCollidersAt) { _logCollidersAt = -1f; Nav.LogExtraColliders(); }
             if (sig == _gimmickSig) return;
+            AnnounceBridges(_gimmickSig != 0);
             if (_gimmickSig != 0)
             {
                 NavLog.Line("gimmick changed: forgetting the walking grid");
@@ -534,7 +628,14 @@ namespace SetsunaAccess
             foreach (var j in jumps)
             {
                 var id = j.mapJumpParam.jumpMapName;
-                var name = MapData.FloorName(id);
+                // A jump to this very map is a teleporter's landing pad (set off by its switch).
+                var self = SceneManager.CurrentFloorInfo;
+                if (self != null && string.Equals(id, self.id, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    result.Add(new KeyValuePair<MapJump, string>(j, Strings.TeleportPad));
+                    continue;
+                }
+                var name = PartName(id);
                 var label = Strings.Exit(name);
                 if (name.Length > 0 && (names[name] > 1 || name == here))
                 {
@@ -617,10 +718,21 @@ namespace SetsunaAccess
                 for (var i = 1; i < path.Count; i++) route.Add(MapData.FloorName(path[i]));
                 line += ", " + Strings.Through(route);
             }
+            if (best != null && player != null && Nav.CanReach(player.position, best.transform.position, 3f, true) == Nav.Reach.No)
+            {
+                var tele = TeleporterToward(best.transform.position);
+                if (tele != null)
+                {
+                    _category = 6; // switches
+                    Select(tele.transform, SwitchName(tele), Kind.Switch);
+                    Speech.Say(line + ". " + Strings.ViaTeleporter + " " + Describe(_selectedName, tele.transform));
+                    return;
+                }
+            }
             if (best != null)
             {
                 _category = 3; // exits
-                Select(best.transform, Strings.Exit(MapData.FloorName(next)), Kind.Exit);
+                Select(best.transform, Strings.Exit(PartName(next)), Kind.Exit);
                 line += ". " + Strings.NextStep + " " + Describe(_selectedName, best.transform);
             }
             Speech.Say(line);

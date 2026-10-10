@@ -130,7 +130,7 @@ namespace SetsunaAccess
                 var d = a.Pos - t.position; d.y = 0f;
                 if (d.sqrMagnitude < best) { best = d.sqrMagnitude; arrival = a; }
             }
-            if (arrival == null) { Log.Append("nav.log", "objective: target unreachable here and no other arrival point"); return Switch(player, name); }
+            if (arrival == null) { Log.Append("nav.log", "objective: target unreachable here and no other arrival point"); return Switch(player, name, t.position); }
 
             // Out through an exit we can walk to, round to a floor whose exit enters this one at that arrival point.
             var here = floor.id;
@@ -147,15 +147,17 @@ namespace SetsunaAccess
                 return true;
             }
             Log.Append("nav.log", "objective: target unreachable here; arrival " + arrival.Id + " has no known entrance");
-            return Switch(player, name);
+            return Switch(player, name, t.position);
         }
 
         /// <summary>
         /// The target is cut off but a switch you can reach hasn't been used: that's most likely the way
         /// (Serendale's bridge east). Select the nearest such switch.
         /// </summary>
-        private static bool Switch(Transform player, string name)
+        private static bool Switch(Transform player, string name, Vector3 target)
         {
+            var tele = Field.TeleporterToward(target);
+            if (tele != null) { Field.SelectSwitch(tele, Strings.ObjectiveViaTeleporter(name)); return true; }
             GimmickSwitch best = null;
             var bestD = float.MaxValue;
             foreach (var g in UnityEngine.Object.FindObjectsOfType<GimmickSwitch>())

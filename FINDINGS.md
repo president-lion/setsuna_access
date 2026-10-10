@@ -436,3 +436,14 @@ walls-only flood (even with no body width) call the pocket closed. Remembered tr
 walks are saved to UserData\SetsunaAccess\trails\<scene>.txt (on scene change and every 30 s) and loaded on each
 visit; walked-to-walked steps are always allowed, so a way found by hand once is routable afterwards. Seeded
 trails\ma_0000_01.txt from this walk's nav.log positions.
+
+Archimell Ruins (MA_0028_01..05, 2026-10-10): two kinds of switch (GimmickSwitch.switchType from the model name
+mg_swtc_0N): _03 teleporters (TRANSFER; gimmickParam.argument1 names a MapJump, actionObj tagged "MapJump",
+pressing it runs MapJumpTransfer) and _02 ancient switches (REMAINS) that raise/lower mg_arct_03 walkways
+(BridgeControl type REMAINS, flags GMK_FLAG_00xx). Several teleporters jump to the same map (MA_0028_03 ->
+MA_0028_03 mjarea_05), landing at that map's MJP arrival point; those MapJumps were listed as "Exit to Archimell
+Ruins". Area 3's exit to area 4 (mjarea_04, (-42,-9,-70)) is not reachable on foot; the user got stuck there
+at progress 241090 and left. Now: switches are named "Teleporter, lands N m <dir> of it" / "Teleporter to <map>"
+/ "Ancient switch"; same-map jumps are "Teleporter pad"; exits to same-named maps say "area N"; when N's exit (or
+target) is unreachable it picks a reachable teleporter whose landing spot is nearest it; a BridgeControl changing
+state is announced ("A bridge moved", direction, distance).

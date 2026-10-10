@@ -39,6 +39,17 @@ namespace SetsunaAccess
         public const string DoorLockedHaveKey = "Door, locked, you have the key";
         public const string DoorSwitch = "Door, opened by a switch";
         public const string SwitchName = "Switch";
+        public const string AncientSwitch = "Ancient switch";
+        public const string BridgeMoved = "A bridge moved";
+        public const string AncientSwitchUsed = "Ancient switch, used";
+        public const string Teleporter = "Teleporter";
+        public const string TeleportPad = "Teleporter pad";
+        public const string NotWorkingYet = "not working yet";
+        public const string ViaTeleporter = "You can't walk there; take this teleporter:";
+        public static string TeleporterHere(string direction, int meters) { return "Teleporter, lands " + meters + " meters " + direction + " of it"; }
+        public static string TeleporterTo(string place) { return "Teleporter to " + place; }
+        public static string AreaOf(string name, int part) { return name + " area " + part; }
+        public static string ObjectiveViaTeleporter(string what) { return what + ", but you can't walk there. Take this teleporter"; }
         public const string SwitchUsed = "Switch, used";
         public const string SwitchInactive = "Switch, not working yet";
         public static string LockedChest(string key, bool have)
