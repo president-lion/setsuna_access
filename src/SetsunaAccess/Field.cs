@@ -444,7 +444,7 @@ namespace SetsunaAccess
         private static int EnemyId(EnemyControl e)
         {
             int id;
-            return e != null && e.enemyParam != null && int.TryParse((e.enemyParam.id ?? "").Trim('int.TryParse(e.enemyParam.id, out id)', ' '), out id) ? id : 0;
+            return e != null && e.enemyParam != null && int.TryParse((e.enemyParam.id ?? "").Trim('\0', ' '), out id) ? id : 0;
         }
 
         private static bool IsSpritniteEaten(int id)
