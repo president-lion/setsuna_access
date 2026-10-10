@@ -128,6 +128,9 @@ namespace SetsunaAccess
 
         private static void Select(Transform t, string name, Kind kind)
         {
+            // Objective and save point picks name things themselves: the player's own name wins, as in the scanner.
+            var custom = Names.Get(NameKey(t, kind));
+            if (custom != null) name = custom;
             var player = Player();
             NavLog.Line("select: " + name + " [" + kind + "] " + NavLog.P(t.position)
                         + (player == null ? "" : ", player " + NavLog.P(player.position)));
@@ -576,7 +579,7 @@ namespace SetsunaAccess
         public static void SetObjective(Transform target, string name, bool walkInto)
         {
             Select(target, name, walkInto ? (name == Strings.ObjectiveSpot ? Kind.Spot : Kind.Enemy) : Kind.Person);
-            Speech.Say(Describe(name, target));
+            Speech.Say(Describe(_selectedName, target));
         }
 
         /// <summary>The way on is a switch (a bridge or door it works): select it and say why.</summary>
