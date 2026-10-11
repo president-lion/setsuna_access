@@ -19,6 +19,8 @@ namespace SetsunaAccess
         private static readonly Dictionary<int, int> _stock = new Dictionary<int, int>();
         private static readonly List<string> _hud = new List<string>();
         private static bool _pendingStart;
+        private static string _enemySkill;  // named enemy attack, put before its damage report
+        private static readonly Dictionary<BattleCharacter, ELEMENT> _element = new Dictionary<BattleCharacter, ELEMENT>();
 
         // ---- lifecycle ------------------------------------------------------------------
 
@@ -27,6 +29,8 @@ namespace SetsunaAccess
             _announcedPlayer = -1;
             _stock.Clear();
             _hud.Clear();
+            _element.Clear();
+            _enemySkill = null;
             if (!isFirst) _pendingStart = true;
         }
 
@@ -42,8 +46,11 @@ namespace SetsunaAccess
             }
             if (_hud.Count > 0)
             {
-                Speech.Say(string.Join(", ", _hud.ToArray()), false);
+                var report = string.Join(", ", _hud.ToArray());
+                if (_enemySkill != null) report = _enemySkill + ": " + report;
+                Speech.Say(report, false);
                 _hud.Clear();
+                _enemySkill = null;
             }
         }
 
@@ -163,14 +170,43 @@ namespace SetsunaAccess
             var name = c == null ? "" : Name(c);
             if (type == UiBattleWindow.HUD_TXT_TYPE.MISS && string.IsNullOrEmpty(value))
                 value = Reflect.Get<string>(win, "missStr");
-            if (Settings.BattleEvents) _hud.Add(Strings.Hud(type.ToString(), name, TextClean.Clean(value)));
+            var element = "";
+            ELEMENT e;
+            if (c != null && (type == UiBattleWindow.HUD_TXT_TYPE.DAMAGE_HP || type == UiBattleWindow.HUD_TXT_TYPE.CRITICAL
+                              || type == UiBattleWindow.HUD_TXT_TYPE.DAMAGE_MP) && _element.TryGetValue(c, out e))
+            {
+                element = ElementName(e);
+                _element.Remove(c);
+            }
+            if (Settings.BattleEvents) _hud.Add(Strings.Hud(type.ToString(), name, TextClean.Clean(value), element));
         }
 
         public static void OnSkillName(string text, bool isEnemy)
         {
             var name = TextClean.Clean(text);
             Dialogue.Suppress(text);
-            Speech.Say(isEnemy ? Strings.EnemySkill(name) : name, false);
+            if (!isEnemy) { Speech.Say(name, false); return; }
+            // Interrupts: queued, the next menu arrow cut it off before it was heard.
+            if (Settings.EnemyAttacks) Speech.Say(Strings.EnemySkill(name), true);
+            _enemySkill = name;
+        }
+
+        /// <summary>BattleCharacter.Damage runs just before the number pops up: remember the hit's element.</summary>
+        public static void OnDamage(BattleCharacter target, ELEMENT element)
+        {
+            if (target != null) _element[target] = element;
+        }
+
+        /// <summary>The game's own element words, as the tech descriptions write them ([Fire], [Light], [Time]).</summary>
+        private static string ElementName(ELEMENT e)
+        {
+            var parts = new List<string>();
+            if ((e & ELEMENT.FIRE) != 0) parts.Add(Strings.ElementFire);
+            if ((e & ELEMENT.WATER) != 0) parts.Add(Strings.ElementWater);
+            if ((e & ELEMENT.HOLY) != 0) parts.Add(Strings.ElementLight);
+            if ((e & ELEMENT.DARK) != 0) parts.Add(Strings.ElementDark);
+            if ((e & ELEMENT.CHRONO) != 0) parts.Add(Strings.ElementTime);
+            return string.Join(" ", parts.ToArray());
         }
 
         public static void OnSkillMessage(string text)

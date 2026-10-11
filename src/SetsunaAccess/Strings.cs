@@ -69,8 +69,10 @@ namespace SetsunaAccess
         public const string OptMomentumHelp = "A high beep in battle when the Momentum button timing window opens.";
         public const string OptReady = "Battle ready announcements";
         public const string OptReadyHelp = "Says when another character becomes ready while you're choosing for someone.";
+        public const string OptEnemyAttacks = "Enemy attack names, spoken at once";
+        public const string OptEnemyAttacksHelp = "Says an enemy's named attack the moment it starts, cutting off whatever was being read. Off: the name is still put before that attack's damage report.";
         public const string OptHud = "Battle damage and healing reports";
-        public const string OptHudHelp = "Reads the numbers that pop up in battle: damage, healing, misses, status changes.";
+        public const string OptHudHelp = "Reads the numbers that pop up in battle: damage with its element, like 99 water damage, healing, misses, status changes.";
         public const string OptPositions = "Menu positions";
         public const string OptPositionsHelp = "Says where you are in a menu, like 3 of 7.";
         public const string OptDescriptions = "Item and tech descriptions in menus";
@@ -223,6 +225,7 @@ namespace SetsunaAccess
         public static string Ready(string name) { return name + " ready"; }
         public static string Cost(string cost) { return "Cost " + cost; }
         public static string EnemySkill(string skill) { return "Enemy: " + skill; }
+        public const string ElementFire = "fire", ElementWater = "water", ElementLight = "light", ElementDark = "dark", ElementTime = "time";
         public const string SaveDumped = "Game written to setsuna_save.txt in the game folder.";
         public const string SaveDumpNoGame = "Load a game first.";
         public static string EnemyNumber(string name, int number) { return name + " " + number; }
@@ -253,16 +256,17 @@ namespace SetsunaAccess
         }
 
         /// <summary>Damage pop-ups. type is UiBattleWindow.HUD_TXT_TYPE by name.</summary>
-        public static string Hud(string type, string target, string value)
+        public static string Hud(string type, string target, string value, string element = "")
         {
             string what;
+            var el = string.IsNullOrEmpty(element) ? "" : element + " ";
             switch (type)
             {
-                case "DAMAGE_HP": what = value + " damage"; break;
-                case "DAMAGE_MP": what = value + " MP damage"; break;
+                case "DAMAGE_HP": what = value + " " + el + "damage"; break;
+                case "DAMAGE_MP": what = value + " " + el + "MP damage"; break;
                 case "RECOVERY_HP": what = "recovers " + value + " HP"; break;
                 case "RECOVERY_MP": what = "recovers " + value + " MP"; break;
-                case "CRITICAL": what = "critical, " + value + " damage"; break;
+                case "CRITICAL": what = "critical, " + value + " " + el + "damage"; break;
                 case "KILL": what = string.IsNullOrEmpty(value) ? "defeated" : value; break;
                 default: what = value; break; // MISS, BUFF, DEBUFF: the game's own word or status name
             }

@@ -142,6 +142,7 @@ namespace SetsunaAccess
             Hook(h, bw, "ShowAutoSetsunaSystemMessage", postfix: nameof(Battle_AutoSetsuna));
             Hook(h, bw, "UpdateSetsunaGauge", postfix: nameof(Battle_Gauge));
             Hook(h, typeof(UiBattleScrollList), "SetCursorPosOnScrollList", postfix: nameof(Battle_Scroll));
+            Hook(h, typeof(BattleCharacter), "Damage", prefix: nameof(Battle_Damage));
 
             // Title screen.
             Hook(h, typeof(UiTitleMain), "SetPressObject", postfix: nameof(Title_Press));
@@ -566,6 +567,11 @@ namespace SetsunaAccess
         {
             var stock = atParam.setsunaGaugeStock;
             Guard("Battle.Gauge", () => Battle.OnSetsunaGauge(playerIndex, stock));
+        }
+
+        private static void Battle_Damage(BattleCharacter __instance, ELEMENT element)
+        {
+            Guard("Battle.Damage", () => Battle.OnDamage(__instance, element));
         }
 
         private static void Battle_Scroll(UiBattleScrollList __instance, int x, int y)

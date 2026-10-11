@@ -40,6 +40,7 @@ namespace SetsunaAccess
         public static bool MomentumTone { get { return Get(_momentum); } }
         public static bool ReadyAnnouncements { get { return Get(_ready); } }
         public static bool BattleEvents { get { return Get(_hud); } }
+        public static bool EnemyAttacks { get { return Get(_enemy); } }
         // Menus
         public static bool Positions { get { return Get(_positions); } }
         public static bool Descriptions { get { return Get(_descriptions); } }
@@ -48,7 +49,7 @@ namespace SetsunaAccess
         public static bool CpuGuard { get { return Get(_cpu); } }
 
         private static MelonPreferences_Entry<bool> _walkTo, _objective, _hints, _beacon, _hide, _trails, _bump, _danger, _scenes,
-            _bridges, _momentum, _ready, _hud, _positions, _descriptions, _equipped, _cpu;
+            _bridges, _momentum, _ready, _hud, _enemy, _positions, _descriptions, _equipped, _cpu;
 
         public static void Init()
         {
@@ -65,6 +66,7 @@ namespace SetsunaAccess
             _bridges = Add("BridgeAnnouncements", true, Strings.OptBridges, Strings.OptBridgesHelp);
             _momentum = Add("MomentumTone", true, Strings.OptMomentum, Strings.OptMomentumHelp);
             _ready = Add("ReadyAnnouncements", true, Strings.OptReady, Strings.OptReadyHelp);
+            _enemy = Add("EnemyAttacks", true, Strings.OptEnemyAttacks, Strings.OptEnemyAttacksHelp);
             _hud = Add("BattleEvents", true, Strings.OptHud, Strings.OptHudHelp);
             _positions = Add("Positions", true, Strings.OptPositions, Strings.OptPositionsHelp);
             _descriptions = Add("Descriptions", true, Strings.OptDescriptions, Strings.OptDescriptionsHelp);
