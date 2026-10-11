@@ -621,7 +621,7 @@ namespace SetsunaAccess
             var names = new Dictionary<string, int>();
             foreach (var j in jumps)
             {
-                var n = MapData.FloorName(j.mapJumpParam.jumpMapName);
+                var n = PartName(j.mapJumpParam.jumpMapName);
                 int c; names.TryGetValue(n, out c); names[n] = c + 1;
             }
             var result = new List<KeyValuePair<MapJump, string>>();
@@ -637,7 +637,7 @@ namespace SetsunaAccess
                 }
                 var name = PartName(id);
                 var label = Strings.Exit(name);
-                if (name.Length > 0 && (names[name] > 1 || name == here))
+                if (name.Length > 0 && (Count(names, name) > 1 || name == here))
                 {
                     var info = MapData.Contents(id);
                     label = Strings.ExitDetail(label, info.Shops, info.People, info.SavePoint);
@@ -645,6 +645,11 @@ namespace SetsunaAccess
                 result.Add(new KeyValuePair<MapJump, string>(j, label));
             }
             return result;
+        }
+
+        private static int Count(Dictionary<string, int> names, string name)
+        {
+            int c; names.TryGetValue(name, out c); return c;
         }
 
         /// <summary>
