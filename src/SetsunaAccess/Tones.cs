@@ -9,8 +9,8 @@ namespace SetsunaAccess
     /// Short generated beeps for cues too quick for speech (the Momentum timing window) and the
     /// walking beacon. The game ships with Unity audio disabled (AudioManager.m_DisableAudio) and
     /// plays everything through CRI, so these go straight to Windows: a WAV built in memory and
-    /// played with winmm PlaySound. Pan is baked into the stereo samples. The beacon and Momentum
-    /// cues use the user's recordings in mod/sounds when they load.
+    /// played with winmm PlaySound. Pan is baked into the stereo samples. The beacon, Momentum and
+    /// wall bump cues use the user's recordings in mod/sounds when they load.
     /// </summary>
     internal static class Tones
     {
@@ -25,7 +25,7 @@ namespace SetsunaAccess
 
         // The user's recorded cues (mod/sounds, embedded in the DLL), as mono samples at 44.1 kHz.
         // Null when missing or unreadable; the generated beep is used instead.
-        private static float[] _beaconWav, _momentumWav;
+        private static float[] _beaconWav, _momentumWav, _wallWav;
         private static bool _loaded;
 
         public static void Momentum()
@@ -36,7 +36,12 @@ namespace SetsunaAccess
         }
 
         /// <summary>Low thud: walking into something.</summary>
-        public static void Bump() { Play(160f, 0.06f, 0f, 0.5f); }
+        public static void Bump()
+        {
+            Load();
+            if (_wallWav != null) PlaySamples(_wallWav, 1f, 0f, 1f);
+            else Play(160f, 0.06f, 0f, 0.5f);
+        }
 
         /// <summary>Walking beacon: pan -1..1 (left..right), pitch multiplier.</summary>
         public static void Beacon(float pan, float pitch, bool noRoute = false)
@@ -53,6 +58,7 @@ namespace SetsunaAccess
             _loaded = true;
             _beaconWav = ReadWav("sounds.beacon.wav");
             _momentumWav = ReadWav("sounds.momentum.wav");
+            _wallWav = ReadWav("sounds.wall.wav");
         }
 
         /// <summary>16-bit PCM WAV resource, mixed down to mono and resampled to 44.1 kHz.</summary>

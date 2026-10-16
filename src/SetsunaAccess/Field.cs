@@ -263,7 +263,7 @@ namespace SetsunaAccess
             if (moved.magnitude < 0.08f && now >= _nextBump)
             {
                 if (Settings.BumpSound) Tones.Bump();
-                _nextBump = now + 0.45f;
+                _nextBump = now + 0.55f; // wall.wav is half a second; let it finish
                 // Teach the route finder about whatever is here, so the beacon stops pointing into it.
                 if (Guide.Target != null && !AutoWalk.Active)
                 {
