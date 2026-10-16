@@ -35,6 +35,10 @@ namespace SetsunaAccess
         private static readonly Dictionary<Cell, float> _probe = new Dictionary<Cell, float>();
         private static readonly Dictionary<Cell, bool> _clear = new Dictionary<Cell, bool>();
         private static readonly HashSet<Cell> _blocked = new HashSet<Cell>(); // learned from getting stuck
+        // Squares whose edge stopped the party: no dropping into them from above. A bump at a ledge marks cells at
+        // the upper level, but the plan's step lands on the floor below, a different cell (Archimell Ruins room 3:
+        // the walk kept stepping off the teleporter platform into its rim).
+        private static readonly HashSet<long> _noDrop = new HashSet<long>();
         private static string _scene;
 
         public static Cell ToCell(Vector3 p) { return CellAt(Mathf.FloorToInt(p.x / CellSize), Mathf.FloorToInt(p.z / CellSize), p.y); }
@@ -43,9 +47,17 @@ namespace SetsunaAccess
         /// The cell for the surface at height y in square (x, z): an existing one within 1.2 m, or a new level.
         /// Floors stacked closer than that are one surface to the grid.
         /// </summary>
+        private static long SquareKey(int x, int z) { return ((long)x << 32) ^ (uint)z; }
+
+        /// <summary>A step the party got stuck on: into a learned cell, or down a learned edge.</summary>
+        private static bool Learned(Cell to, float fromY, float toY)
+        {
+            return _blocked.Contains(to) || (toY < fromY - 1f && _noDrop.Contains(SquareKey(to.X, to.Z)));
+        }
+
         private static Cell CellAt(int x, int z, float y)
         {
-            var key = ((long)x << 32) ^ (uint)z;
+            var key = SquareKey(x, z);
             List<Cell> list;
             if (!_columns.TryGetValue(key, out list)) { list = new List<Cell>(2); _columns[key] = list; }
             foreach (var c in list)
@@ -95,7 +107,11 @@ namespace SetsunaAccess
             var depth = repeats >= 2 ? 2 : 1;
             for (var row = 0; row < depth; row++)
                 for (var i = -half; i <= half; i++)
-                    _blocked.Add(ToCell(ahead + dir * (row * CellSize) + side * (i * CellSize)));
+                {
+                    var q = ahead + dir * (row * CellSize) + side * (i * CellSize);
+                    _blocked.Add(ToCell(q));
+                    _noDrop.Add(SquareKey(Mathf.FloorToInt(q.x / CellSize), Mathf.FloorToInt(q.z / CellSize)));
+                }
             _reachDirty = true;
 
             var probe = pos + dir * 0.5f + Vector3.up * 0.8f;
@@ -360,6 +376,7 @@ namespace SetsunaAccess
             _thin.Clear();
             _wallCost.Clear();
             _blocked.Clear();
+            _noDrop.Clear();
             _reachDirty = true;
             _job = null;
         }
@@ -459,6 +476,7 @@ namespace SetsunaAccess
                 LoadTrail();
                 ResetSurfaces();
                 _blocked.Clear();
+                _noDrop.Clear();
                 _wallCost.Clear();
                 _hasWalkPos = false;
                 _walkLogs = 0;
@@ -684,7 +702,7 @@ namespace SetsunaAccess
                 return null;
             }
             if (Walked(from, to)) return to;
-            if (_blocked.Contains(to)) { _whyLearned++; return null; }
+            if (Learned(to, fromY, toY)) { _whyLearned++; return null; }
             if (!ThinClear(to, toY)) { _whyBlocked++; return null; }
             if (UprightWall(from, fromY, to, toY, true)) { _whyWall++; return null; }
             return to;
@@ -775,7 +793,7 @@ namespace SetsunaAccess
                 return null;
             }
             if (Walked(from, to)) return to;
-            if (_blocked.Contains(to)) { _whyR[0]++; return null; }
+            if (Learned(to, fromY, toY)) { _whyR[0]++; return null; }
             if (!Clear(to, toY)) { _whyR[4]++; return null; }
             // Rock faces and cliffs are part of the ground mesh (HitGround), and a downward ray that starts
             // inside one misses it. A thin line at knee height between the two cells catches the face, while
@@ -802,7 +820,7 @@ namespace SetsunaAccess
                 return null;
             }
             if (Walked(from, to)) return to;
-            if (_blocked.Contains(to)) { _whyR[0]++; return null; }
+            if (Learned(to, fromY, toY)) { _whyR[0]++; return null; }
             if (!ThinClear(to, toY)) { _whyR[4]++; return null; }
             if (UprightWall(from, fromY, to, toY, false)) { _whyR[5]++; return null; }
             return to;
@@ -819,11 +837,11 @@ namespace SetsunaAccess
             if (_probe.TryGetValue(key, out y)) return y;
             RaycastHit hit;
             var origin = new Vector3((x + 0.5f) * CellSize, refY + 1.5f, (z + 0.5f) * CellSize);
-            y = Physics.Raycast(origin, Vector3.down, out hit, 1.5f + MaxDrop + 0.5f, _groundMask) ? hit.point.y : float.NaN;
-            // The world map has stretches with no ground collider at all (round Floneia Citadel). The game walks on
-            // there at the same height (UpdateHeight only moves the party when its ray hits something), and HitWall
-            // bounds the land, so on the world map missing ground is flat ground.
-            if (float.IsNaN(y) && IsWorld) y = refY;
+            // The game's own probe (BaseCharacter.UpdateHeight): from 1.5 m above the feet, 11.5 m down. A hit is
+            // the floor (falling to it if lower); no hit at all leaves the height alone, so the party walks on at
+            // the same level. Some ground has no collider (round Floneia Citadel on the world map, beside the
+            // ruins exit on Twallusk Mountain), so missing ground is flat ground; walls still bound it.
+            y = Physics.Raycast(origin, Vector3.down, out hit, 1.5f + 10f, _groundMask) ? hit.point.y : refY;
             _probe[key] = y;
             return y;
         }
@@ -932,7 +950,7 @@ namespace SetsunaAccess
                 int x = Mathf.FloorToInt(q.x / CellSize), z = Mathf.FloorToInt(q.z / CellSize);
                 var gy = Ground(x, z, y);
                 if (float.IsNaN(gy) || gy > y + MaxRise || gy < y - MaxDrop) return false;
-                if (_blocked.Contains(CellAt(x, z, gy))) return false;
+                if (Learned(CellAt(x, z, gy), y, gy)) return false;
                 y = gy;
             }
             return true;
