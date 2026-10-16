@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="CustomNames.txt" />
+    <EmbeddedResource Include="..\..\sounds\*.wav" LogicalName="sounds.%(Filename).wav" />
   </ItemGroup>
 
   <!-- Private=false: the game and the loader supply these, we must not ship copies. -->
